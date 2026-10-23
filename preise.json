@@ -1,28 +1,33 @@
 {
   "example": true,
   "vat": 19,
-  "validDays": 30,
+  "validDays": 28,
+  "termMonths": 24,
   "packages": [
     {
       "id": "L",
       "name": "Paket L",
       "desc": "Voller Funktionsumfang für wachsende Betriebe",
-      "monthly": 189,
+      "monthly": 129,
       "perExtra": 49,
-      "sku": "PKG-L"
+      "sku": "PKG-L",
+      "pdfName": "Paket L",
+      "extraName": "Zusätzliche Arbeitsplatzlizenzen L"
     },
     {
       "id": "M",
       "name": "Paket M",
       "desc": "Kernfunktionen für den Betriebsalltag",
-      "monthly": 129,
+      "monthly": 89,
       "perExtra": 39,
-      "sku": "PKG-M"
+      "sku": "PKG-M",
+      "pdfName": "Paket M",
+      "extraName": "Zusätzliche Arbeitsplatzlizenzen M"
     },
     {
       "id": "KI",
       "name": "KI-Bundle",
-      "desc": "Software plus KI-Assistenz, in drei Größen",
+      "desc": "Paket L mit KI-Assistenz HalloPetra, in drei Größen",
       "variants": true
     }
   ],
@@ -31,25 +36,34 @@
       "id": "einzel",
       "name": "Einzelkämpfer",
       "desc": "Für Solo-Selbstständige",
-      "monthly": 89,
-      "perExtra": 29,
-      "sku": "KI-EINZEL"
+      "monthly": 229,
+      "perExtra": 49,
+      "sku": "KI-EINZEL",
+      "pdfName": "Paket L & KI-Bundle",
+      "extraName": "Zusätzliche Arbeitsplatzlizenzen L",
+      "hpName": "HalloPetra Einzelkämpfer"
     },
     {
       "id": "betriebe",
       "name": "Betriebe",
       "desc": "Für Teams bis ca. 10 Personen",
-      "monthly": 169,
-      "perExtra": 45,
-      "sku": "KI-BETRIEB"
+      "monthly": 329,
+      "perExtra": 49,
+      "sku": "KI-BETRIEB",
+      "pdfName": "Paket L & KI-Bundle",
+      "extraName": "Zusätzliche Arbeitsplatzlizenzen L",
+      "hpName": "HalloPetra Betriebe"
     },
     {
       "id": "mittelstand",
       "name": "Mittelstand",
       "desc": "Für mehrere Abteilungen",
-      "monthly": 319,
-      "perExtra": 59,
-      "sku": "KI-MITTEL"
+      "monthly": 629,
+      "perExtra": 49,
+      "sku": "KI-MITTEL",
+      "pdfName": "Paket L & KI-Bundle",
+      "extraName": "Zusätzliche Arbeitsplatzlizenzen L",
+      "hpName": "HalloPetra Mittelstand"
     }
   ],
   "groups": [
@@ -85,7 +99,7 @@
   "modules": [
     {
       "id": "wartung",
-      "name": "Wartung",
+      "name": "TAIFUN Wartung",
       "desc": "Updates, Support und Fernwartung",
       "pricing": "flat",
       "monthly": 39,
@@ -97,10 +111,10 @@
     },
     {
       "id": "import",
-      "name": "Importmanager",
+      "name": "TAIFUN Import-Manager",
       "desc": "Datenübernahme aus Fremdsystemen",
       "pricing": "flat",
-      "monthly": 25,
+      "monthly": 9,
       "perUser": 0,
       "unit": "Nutzer",
       "once": 0,
@@ -109,85 +123,136 @@
     },
     {
       "id": "app",
-      "name": "App",
+      "name": "TAIFUN App",
       "desc": "Mobile App für Monteure und Außendienst",
       "pricing": "perUser",
       "monthly": 19,
-      "perUser": 7,
-      "unit": "Nutzer",
-      "once": 149,
+      "perUser": 19,
+      "unit": "aktive Mitarbeiter",
+      "once": 290,
       "sku": "MOD-APP",
-      "discountable": false
+      "discountable": false,
+      "baseName": "TAIFUN App Grundgebühr",
+      "userName": "TAIFUN App aktive Mitarbeiter",
+      "onceName": "TAIFUN App Basis, einmalige Bereitstellungsgebühr"
     },
     {
       "id": "tpm",
       "name": "TAIFUN Personalmanager (TPM)",
       "desc": "Personalverwaltung",
       "pricing": "perUser",
-      "monthly": 29,
-      "perUser": 5,
-      "unit": "Nutzer",
+      "monthly": 49,
+      "perUser": 7,
+      "unit": "aktive Mitarbeiter",
       "once": 0,
       "sku": "MOD-TPM",
-      "discountable": false
+      "discountable": false,
+      "baseName": "TAIFUN PersonalManager Grundgebühr",
+      "userName": "TAIFUN PersonalManager aktive Mitarbeiter",
+      "onceName": ""
     }
   ],
   "cloud": {
-    "monthly": 99,
+    "monthly": 129,
     "included": 3,
     "perExtra": 25,
-    "once": 250,
+    "once": 190,
     "sku": "BETR-CLOUD",
-    "extraSku": "BETR-CLOUD-AP"
+    "extraSku": "BETR-CLOUD-AP",
+    "pdfName": "Cloud Dienst inkl. drei Cloud Nutzer Lizenzen",
+    "extraName": "Zusätzliche Cloud Nutzer Lizenz",
+    "setupName": "Online Installationspaket"
   },
   "local": {
-    "once": 390,
-    "sku": "BETR-LOKAL"
+    "once": 190,
+    "sku": "BETR-LOKAL",
+    "setupName": "Online Installationspaket"
   },
   "training": {
-    "rate": 95,
+    "rate": 139,
+    "rateName": "Zusätzliche Dienstleistungen",
     "travel": 1.5,
+    "travelName": "km inkl. der benötigten Anfahr- u. Abfahrzeit",
+    "km": 100,
     "flatMaxUsers": 4,
     "discountable": false,
-    "sku": "SCHULUNG"
+    "sku": "DL-STD",
+    "travelSku": "DL-KM"
   },
   "trainings": [
     {
-      "id": "allgemein",
-      "name": "Online-Schulung TAIFUN allgemein",
-      "price": 390,
+      "id": "ersteinrichtung",
+      "name": "Ersteinrichtung nach Aufwand",
+      "price": 139,
       "pkgs": [
         "L",
-        "M"
+        "M",
+        "KI"
       ],
       "module": "",
-      "sku": "SCH-ALLG"
+      "sku": "DL-ERST",
+      "aufwand": true
     },
     {
-      "id": "doku",
-      "name": "Online-Schulung Dokumentenarchiv",
-      "price": 190,
+      "id": "allgemein",
+      "name": "Online-Seminar Ersteinweisung für Neukunden*",
+      "price": 110,
       "pkgs": [
-        "L"
+        "L",
+        "M",
+        "KI"
       ],
       "module": "",
-      "sku": "SCH-DOKU"
+      "sku": "SEM-ALLG",
+      "seminar": true
+    },
+    {
+      "id": "tpm-inst",
+      "name": "Online Installation TAIFUN Personalmanager",
+      "price": 140,
+      "pkgs": [],
+      "module": "tpm",
+      "sku": "DL-PM"
+    },
+    {
+      "id": "hp",
+      "name": "Erstinstallation und Einrichtung HalloPetra Verknüpfung mit TAIFUN+",
+      "price": 60,
+      "pkgs": [
+        "KI"
+      ],
+      "module": "",
+      "sku": "DL-HP"
     },
     {
       "id": "app",
-      "name": "Online-Schulung App",
-      "price": 149,
+      "name": "Online Seminar TAIFUN App*",
+      "price": 50,
       "pkgs": [],
       "module": "app",
-      "sku": "SCH-APP"
+      "sku": "SEM-APP",
+      "seminar": true
+    },
+    {
+      "id": "doku",
+      "name": "Online Seminar TAIFUN openDocument*",
+      "price": 50,
+      "pkgs": [
+        "L",
+        "KI"
+      ],
+      "module": "",
+      "sku": "SEM-DOKU",
+      "seminar": true
     },
     {
       "id": "tpm",
-      "name": "Online-Schulung TPM",
-      "price": 149,
+      "name": "Online-Seminar TAIFUN Personalmanager*",
+      "price": 140,
       "pkgs": [],
       "module": "tpm",
-      "sku": "SCH-TPM"
+      "sku": "SEM-PM",
+      "seminar": true
     }
   ],
   "salesforce": {
