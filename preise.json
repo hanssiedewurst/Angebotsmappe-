@@ -1,0 +1,309 @@
+{
+  "example": true,
+  "vat": 19,
+  "validDays": 30,
+  "packages": [
+    {
+      "id": "L",
+      "name": "Paket L",
+      "desc": "Voller Funktionsumfang für wachsende Betriebe",
+      "monthly": 189,
+      "perExtra": 49,
+      "sku": "PKG-L"
+    },
+    {
+      "id": "M",
+      "name": "Paket M",
+      "desc": "Kernfunktionen für den Betriebsalltag",
+      "monthly": 129,
+      "perExtra": 39,
+      "sku": "PKG-M"
+    },
+    {
+      "id": "KI",
+      "name": "KI-Bundle",
+      "desc": "Software plus KI-Assistenz, in drei Größen",
+      "variants": true
+    }
+  ],
+  "kiVariants": [
+    {
+      "id": "einzel",
+      "name": "Einzelkämpfer",
+      "desc": "Für Solo-Selbstständige",
+      "monthly": 89,
+      "perExtra": 29,
+      "sku": "KI-EINZEL"
+    },
+    {
+      "id": "betriebe",
+      "name": "Betriebe",
+      "desc": "Für Teams bis ca. 10 Personen",
+      "monthly": 169,
+      "perExtra": 45,
+      "sku": "KI-BETRIEB"
+    },
+    {
+      "id": "mittelstand",
+      "name": "Mittelstand",
+      "desc": "Für mehrere Abteilungen",
+      "monthly": 319,
+      "perExtra": 59,
+      "sku": "KI-MITTEL"
+    }
+  ],
+  "groups": [
+    {
+      "id": "none",
+      "name": "Kein Partner",
+      "monthlyPct": 0,
+      "oncePct": 0,
+      "months": 0
+    },
+    {
+      "id": "koop",
+      "name": "Kooperationspartner",
+      "monthlyPct": 10,
+      "oncePct": 0,
+      "months": 0
+    },
+    {
+      "id": "meister",
+      "name": "Meisterschüler",
+      "monthlyPct": 30,
+      "oncePct": 0,
+      "months": 12
+    },
+    {
+      "id": "gruender",
+      "name": "Existenzgründer",
+      "monthlyPct": 20,
+      "oncePct": 0,
+      "months": 24
+    }
+  ],
+  "modules": [
+    {
+      "id": "wartung",
+      "name": "Wartung",
+      "desc": "Updates, Support und Fernwartung",
+      "pricing": "flat",
+      "monthly": 39,
+      "perUser": 0,
+      "unit": "Nutzer",
+      "once": 0,
+      "sku": "MOD-WARTUNG",
+      "discountable": true
+    },
+    {
+      "id": "import",
+      "name": "Importmanager",
+      "desc": "Datenübernahme aus Fremdsystemen",
+      "pricing": "flat",
+      "monthly": 25,
+      "perUser": 0,
+      "unit": "Nutzer",
+      "once": 0,
+      "sku": "MOD-IMPORT",
+      "discountable": true
+    },
+    {
+      "id": "app",
+      "name": "App",
+      "desc": "Mobile App für Monteure und Außendienst",
+      "pricing": "perUser",
+      "monthly": 19,
+      "perUser": 7,
+      "unit": "Nutzer",
+      "once": 149,
+      "sku": "MOD-APP",
+      "discountable": false
+    },
+    {
+      "id": "tpm",
+      "name": "TAIFUN Personalmanager (TPM)",
+      "desc": "Personalverwaltung",
+      "pricing": "perUser",
+      "monthly": 29,
+      "perUser": 5,
+      "unit": "Nutzer",
+      "once": 0,
+      "sku": "MOD-TPM",
+      "discountable": false
+    }
+  ],
+  "cloud": {
+    "monthly": 99,
+    "included": 3,
+    "perExtra": 25,
+    "once": 250,
+    "sku": "BETR-CLOUD",
+    "extraSku": "BETR-CLOUD-AP"
+  },
+  "local": {
+    "once": 390,
+    "sku": "BETR-LOKAL"
+  },
+  "training": {
+    "rate": 95,
+    "travel": 1.5,
+    "flatMaxUsers": 4,
+    "discountable": false,
+    "sku": "SCHULUNG"
+  },
+  "trainings": [
+    {
+      "id": "allgemein",
+      "name": "Online-Schulung TAIFUN allgemein",
+      "price": 390,
+      "pkgs": [
+        "L",
+        "M"
+      ],
+      "module": "",
+      "sku": "SCH-ALLG"
+    },
+    {
+      "id": "doku",
+      "name": "Online-Schulung Dokumentenarchiv",
+      "price": 190,
+      "pkgs": [
+        "L"
+      ],
+      "module": "",
+      "sku": "SCH-DOKU"
+    },
+    {
+      "id": "app",
+      "name": "Online-Schulung App",
+      "price": 149,
+      "pkgs": [],
+      "module": "app",
+      "sku": "SCH-APP"
+    },
+    {
+      "id": "tpm",
+      "name": "Online-Schulung TPM",
+      "price": 149,
+      "pkgs": [],
+      "module": "tpm",
+      "sku": "SCH-TPM"
+    }
+  ],
+  "salesforce": {
+    "adapter": "outbox",
+    "stage": "Proposal/Price Quote",
+    "closeDays": 30,
+    "nameTemplate": "{company} – {package}",
+    "billingField": "Abrechnung__c",
+    "exportFields": [
+      {
+        "key": "quoteNumber",
+        "sf": "Angebotsnummer__c",
+        "on": true
+      },
+      {
+        "key": "customerType",
+        "sf": "Kundenart__c",
+        "on": true
+      },
+      {
+        "key": "group",
+        "sf": "Partnerstatus__c",
+        "on": true
+      },
+      {
+        "key": "package",
+        "sf": "Paket__c",
+        "on": true
+      },
+      {
+        "key": "hosting",
+        "sf": "Betriebsart__c",
+        "on": true
+      },
+      {
+        "key": "seats",
+        "sf": "Arbeitsplaetze__c",
+        "on": true
+      },
+      {
+        "key": "modules",
+        "sf": "Zusatzmodule__c",
+        "on": true
+      },
+      {
+        "key": "trainings",
+        "sf": "Schulungen__c",
+        "on": true
+      },
+      {
+        "key": "trainingHours",
+        "sf": "Schulungsstunden__c",
+        "on": true
+      },
+      {
+        "key": "monthlyNet",
+        "sf": "Monatlich_Netto__c",
+        "on": true
+      },
+      {
+        "key": "onceNet",
+        "sf": "Einmalig_Netto__c",
+        "on": true
+      },
+      {
+        "key": "discountMonths",
+        "sf": "Rabattdauer_Monate__c",
+        "on": false
+      },
+      {
+        "key": "validUntil",
+        "sf": "Gueltig_bis__c",
+        "on": true
+      },
+      {
+        "key": "note",
+        "sf": "Description",
+        "on": true
+      },
+      {
+        "key": "contact",
+        "sf": "Ansprechpartner__c",
+        "on": false
+      },
+      {
+        "key": "email",
+        "sf": "Ansprechpartner_EMail__c",
+        "on": false
+      },
+      {
+        "key": "customerNo",
+        "sf": "Kundennummer__c",
+        "on": false
+      }
+    ],
+    "importFields": [
+      {
+        "sf": "Id",
+        "key": "sfAccountId"
+      },
+      {
+        "sf": "Name",
+        "key": "company"
+      },
+      {
+        "sf": "AccountNumber",
+        "key": "customerNo"
+      },
+      {
+        "sf": "Ansprechpartner__c",
+        "key": "contact"
+      },
+      {
+        "sf": "E_Mail__c",
+        "key": "email"
+      }
+    ]
+  }
+}

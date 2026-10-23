@@ -1,0 +1,1294 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Angebotsmappe</title>
+<meta name="description" content="Angebote für Neu- und Bestandskunden zusammenklicken: Paket, Betrieb, Module und Schulungen, mit monatlichen und einmaligen Kosten.">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#142024" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Angebot">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon-64.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+/* Layout: Schrittleiste links · Arbeitsfläche Mitte · laufender Kostenbon rechts (mobil gestapelt) */
+:root {
+  --bg: #EEF2F3;
+  --surface: #FFFFFF;
+  --surface-2: #E4EBED;
+  --line: #CDD8DB;
+  --fg: #142024;
+  --muted: #56686E;
+  --accent: #0B6A70;
+  --accent-fg: #FFFFFF;
+  --accent-soft: #D5EBEB;
+  --deal: #9A520A;
+  --deal-soft: #FAE9D4;
+  --good: #2E7D32;
+  --danger: #B3261E;
+  --f-display: "Avenir Next", "Segoe UI Variable Display", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --f-body: -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --f-num: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0D1416; --surface: #142024; --surface-2: #1B2B30; --line: #2A3D43;
+    --fg: #E2EBED; --muted: #93A6AC; --accent: #52C0C4; --accent-fg: #062629;
+    --accent-soft: #143A3D; --deal: #F1AA5E; --deal-soft: #3A2815; --good: #7CC981; --danger: #F08A82;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0D1416; --surface: #142024; --surface-2: #1B2B30; --line: #2A3D43;
+  --fg: #E2EBED; --muted: #93A6AC; --accent: #52C0C4; --accent-fg: #062629;
+  --accent-soft: #143A3D; --deal: #F1AA5E; --deal-soft: #3A2815; --good: #7CC981; --danger: #F08A82;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); -webkit-text-size-adjust: 100%; }
+body { margin: 0; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 15px; line-height: 1.5; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.15; }
+h2 { font-size: 1.6rem; font-weight: 700; font-stretch: 108%; letter-spacing: -0.01em; }
+h3 { font-size: 1.05rem; font-weight: 650; }
+p { margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.num, .price, .money { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+.eyebrow { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+.muted { color: var(--muted); }
+.small { font-size: 0.85rem; }
+
+/* Kopfzeile */
+.topbar { background: var(--surface); border-bottom: 1px solid var(--line); }
+.topbar-in { max-width: 1320px; margin: 0 auto; display: flex; align-items: center; gap: 12px 20px; flex-wrap: wrap;
+  padding-block: 12px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.brand { display: flex; align-items: baseline; gap: 10px; margin-right: auto; }
+.brand h1 { font-size: 1.25rem; font-weight: 800; font-stretch: 115%; letter-spacing: -0.01em; }
+.brand-mark { width: 14px; height: 14px; border-radius: 3px; background: var(--accent); align-self: center; box-shadow: 4px 4px 0 var(--deal-soft); }
+.store-badge { font-size: 0.78rem; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
+.mod-price .muted { font-family: var(--f-body); }
+.top-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line); background: var(--surface);
+  border-radius: 8px; padding: 8px 14px; cursor: pointer; font-weight: 550; line-height: 1.2; transition: background .15s, border-color .15s; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.ghost { background: transparent; }
+.btn.danger { color: var(--danger); }
+.btn.danger.armed { background: var(--danger); color: var(--surface); border-color: var(--danger); }
+.btn.current { background: var(--accent-soft); border-color: var(--accent); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn.sm { padding: 5px 10px; font-size: 0.85rem; }
+
+/* Grundlayout */
+.layout { max-width: 1320px; margin: 0 auto; display: grid; gap: 24px; align-items: start;
+  grid-template-columns: 210px minmax(0, 1fr) 330px;
+  padding-block: 24px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.layout[data-mode="summary"] { grid-template-columns: 210px minmax(0, 1fr); }
+.layout[data-mode="page"] { grid-template-columns: minmax(0, 1fr); }
+.layout[data-mode="summary"] #receipt, .layout[data-mode="page"] #receipt, .layout[data-mode="page"] #rail { display: none; }
+main { min-width: 0; }
+
+/* Schrittleiste */
+.rail ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; position: sticky; top: 16px; }
+.rail button { width: 100%; text-align: left; display: grid; grid-template-columns: 28px 1fr; gap: 0 10px; align-items: start;
+  border: 0; background: transparent; border-radius: 8px; padding: 9px 10px; cursor: pointer; }
+.rail button:hover { background: var(--surface-2); }
+.rail .n { grid-row: span 2; width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center;
+  font-family: var(--f-num); font-size: 0.8rem; color: var(--muted); background: var(--surface); }
+.rail .lbl { font-weight: 600; }
+.rail .val { font-size: 0.8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rail .done .n { border-color: var(--accent); color: var(--accent); }
+.rail .active { background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
+.rail .active .n { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+
+/* Schritt-Inhalt */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 28px; display: flex; flex-direction: column; gap: 26px; }
+.step-head { display: flex; flex-direction: column; gap: 6px; }
+.step-head p.lead { color: var(--muted); max-width: 62ch; }
+fieldset { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+legend, .label { font-weight: 650; font-size: 0.9rem; padding: 0; margin-bottom: 10px; }
+.choices { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.choice { position: relative; text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); padding: 14px 16px;
+  cursor: pointer; display: flex; flex-direction: column; gap: 4px; transition: border-color .15s, background .15s; min-width: 0; }
+.choice:hover { border-color: var(--accent); }
+.choice.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); }
+.choice-title { font-weight: 650; font-size: 1rem; }
+.choice-sub { font-size: 0.85rem; color: var(--muted); }
+.choice .tag { align-self: flex-start; font-size: 0.75rem; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--deal-soft); color: var(--deal); }
+.choice .price { font-size: 1.15rem; font-weight: 600; margin-top: 6px; }
+.choice .price small { font-size: 0.8rem; color: var(--muted); font-weight: 400; }
+.choice .price-sub { font-size: 0.82rem; color: var(--muted); }
+.choice.pkg { padding: 18px; }
+.choice.pkg .choice-title { font-family: var(--f-display); font-size: 1.25rem; font-stretch: 110%; font-weight: 750; }
+
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px 16px; }
+.field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.field label { font-size: 0.85rem; font-weight: 600; }
+.field .hint { font-size: 0.78rem; color: var(--muted); }
+input[type="text"], input[type="email"], input[type="number"], select, textarea {
+  width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 9px 11px; min-width: 0; }
+input:focus, select:focus, textarea:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+textarea { resize: vertical; min-height: 84px; }
+textarea.code { font-family: var(--f-num); font-size: 0.82rem; }
+
+.stepper { display: inline-flex; align-items: stretch; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--bg); }
+.stepper button { border: 0; background: transparent; width: 38px; font-size: 1.1rem; cursor: pointer; }
+.stepper button:hover { background: var(--surface-2); }
+.stepper input { width: 70px; border: 0; border-left: 1px solid var(--line); border-right: 1px solid var(--line); border-radius: 0; text-align: center; background: var(--surface); font-family: var(--f-num); }
+.stepper input:focus { box-shadow: none; }
+
+.callout { border-radius: var(--r); background: var(--surface-2); padding: 14px 16px; display: flex; flex-wrap: wrap; gap: 10px 24px; align-items: center; justify-content: space-between; }
+.callout .money { font-size: 1.05rem; font-weight: 600; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 12px; cursor: pointer; font-family: var(--f-num); font-size: 0.85rem; }
+.chip.on { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+
+/* Module */
+.mods { display: flex; flex-direction: column; gap: 10px; }
+.mod { border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 14px; align-items: center; }
+.mod.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent-soft) 45%, var(--surface)); }
+.switch { width: 44px; height: 26px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); position: relative; cursor: pointer; padding: 0; }
+.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--muted); transition: transform .15s, background .15s; }
+.switch[aria-checked="true"] { background: var(--accent); border-color: var(--accent); }
+.switch[aria-checked="true"]::after { transform: translateX(18px); background: var(--accent-fg); }
+.mod-info { min-width: 0; }
+.mod-info .t { font-weight: 650; }
+.mod-info .d { font-size: 0.85rem; color: var(--muted); }
+.mod-price { text-align: right; font-family: var(--f-num); font-size: 0.9rem; }
+.mod-price b { display: block; font-size: 1rem; }
+.mod-qty { grid-column: 2 / -1; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding-top: 6px; }
+
+.nav { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 20px; }
+
+/* Kostenbon */
+.receipt { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; position: sticky; top: 16px; display: flex; flex-direction: column; gap: 12px; }
+.receipt-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.receipt table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.receipt th { text-align: right; font-weight: 600; color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; padding-bottom: 4px; }
+.receipt th:first-child { text-align: left; }
+.receipt td { padding: 5px 0; vertical-align: top; border-top: 1px dashed var(--line); }
+.receipt td.m { text-align: right; font-family: var(--f-num); white-space: nowrap; padding-left: 8px; }
+.receipt td .d { display: block; color: var(--muted); font-size: 0.76rem; }
+.receipt tr.disc td { color: var(--deal); }
+.receipt tfoot td { border-top: 1.5px solid var(--fg); font-weight: 650; padding-top: 8px; }
+.receipt .totals { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tot { background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
+.tot .money { font-size: 1.15rem; font-weight: 600; display: block; }
+.tot.m { background: var(--accent-soft); }
+.example-note { font-size: 0.78rem; color: var(--deal); background: var(--deal-soft); border-radius: 8px; padding: 8px 10px; }
+
+/* Übersicht */
+.sum-head { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
+.sum-meta { display: flex; gap: 6px; flex-wrap: wrap; }
+.pill { font-size: 0.78rem; font-weight: 600; border-radius: 999px; padding: 2px 10px; background: var(--surface-2); color: var(--fg); }
+.pill.deal { background: var(--deal-soft); color: var(--deal); }
+.pill.acc { background: var(--accent-soft); color: var(--accent); }
+.pill.good { background: color-mix(in srgb, var(--good) 15%, var(--surface)); color: var(--good); }
+.sum-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+.cost-card { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
+.cost-card header { padding: 14px 18px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; border-bottom: 1px solid var(--line); }
+.cost-card.m header { background: var(--accent-soft); }
+.cost-card.o header { background: var(--surface-2); }
+.cost-card table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.cost-card td { padding: 9px 18px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.cost-card td.m { text-align: right; font-family: var(--f-num); white-space: nowrap; }
+.cost-card td .d { display: block; color: var(--muted); font-size: 0.8rem; }
+.cost-card tr.sub td { font-weight: 600; }
+.cost-card tr.disc td { color: var(--deal); }
+.cost-card tr.vat td { color: var(--muted); border-bottom: 0; }
+.cost-card .grand { margin-top: auto; padding: 14px 18px; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; border-top: 2px solid var(--fg); flex-wrap: wrap; }
+.cost-card .grand .money { font-size: 1.6rem; font-weight: 600; }
+.cost-card .empty { padding: 18px; color: var(--muted); }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.fact { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.fact .money { font-size: 1.1rem; font-weight: 600; display: block; margin-top: 2px; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+details.box { border: 1px solid var(--line); border-radius: 10px; padding: 0 16px; }
+details.box > summary { cursor: pointer; padding: 12px 0; font-weight: 600; }
+details.box[open] > summary { border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+details.box > div { padding-bottom: 16px; display: flex; flex-direction: column; gap: 10px; }
+pre.json { margin: 0; max-height: 360px; overflow: auto; background: var(--bg); border-radius: 8px; padding: 12px; font-family: var(--f-num); font-size: 0.78rem; }
+
+/* Einstellungen & Angebote */
+.page-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+.tabs button { border: 0; background: transparent; padding: 10px 14px; cursor: pointer; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tabs button.on { color: var(--fg); border-bottom-color: var(--accent); }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+table.edit { border-collapse: collapse; width: 100%; min-width: 720px; font-size: 0.88rem; }
+table.edit th { text-align: left; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); padding: 10px 8px; background: var(--surface-2); white-space: nowrap; }
+table.edit td { padding: 6px 8px; border-top: 1px solid var(--line); vertical-align: middle; }
+table.edit input, table.edit select { padding: 6px 8px; }
+table.edit input[type="number"] { width: 96px; font-family: var(--f-num); }
+table.edit td.c { text-align: center; }
+.settings-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+.status-line { font-size: 0.85rem; color: var(--muted); }
+.q-list { display: flex; flex-direction: column; }
+.q-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) auto auto; gap: 8px 16px; align-items: center; padding: 12px 4px; border-top: 1px solid var(--line); }
+.q-row .t { font-weight: 650; }
+.q-row .money { text-align: right; white-space: nowrap; font-size: 0.88rem; }
+.q-row .acts { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.q-row select { width: auto; padding: 5px 8px; font-size: 0.85rem; }
+.empty-state { padding: 30px 10px; text-align: center; color: var(--muted); }
+
+.sneaky { margin-left: auto; width: 28px; height: 28px; border-radius: 50%; border: 1px solid transparent; background: transparent;
+  color: var(--line); font-family: var(--f-num); font-size: 0.8rem; cursor: pointer; padding: 0; }
+.sneaky:hover { color: var(--muted); border-color: var(--line); }
+.sneaky.on { color: var(--deal); border-color: var(--deal); }
+.man-box { display: flex; flex-direction: column; gap: 6px; border: 1px dashed var(--deal); border-radius: 10px; padding: 12px 14px; }
+.man-row { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; color: var(--deal); }
+.man-row input { width: 72px; padding: 5px 8px; font-family: var(--f-num); }
+.receipt .sneaky { margin-left: 0; }
+.receipt-head { flex-wrap: wrap; }
+.receipt-head .num { white-space: nowrap; }
+.man-edit { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 0.8rem; color: var(--deal); }
+.man-edit input { width: 64px; padding: 3px 6px; font-family: var(--f-num); font-size: 0.8rem; }
+.cost-card td .d.man { color: var(--deal); }
+.linkish { border: 0; background: none; padding: 0; color: var(--deal); text-decoration: underline; cursor: pointer; font-size: inherit; }
+
+.toast-btn { margin-left: 10px; border: 1px solid currentColor; background: transparent; color: inherit; border-radius: 6px; padding: 3px 10px; cursor: pointer; font-weight: 600; }
+code { font-family: var(--f-num); font-size: 0.9em; }
+#toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg);
+  padding: 10px 16px; border-radius: 10px; font-weight: 550; max-width: calc(100% - 32px); z-index: 20; box-shadow: 0 6px 24px rgb(0 0 0 / .2); }
+
+@media (max-width: 1080px) {
+  .layout, .layout[data-mode="summary"] { grid-template-columns: minmax(0, 1fr); }
+  .rail ol { flex-direction: row; overflow-x: auto; position: static; gap: 4px; padding-bottom: 4px; }
+  .rail li { flex: 0 0 auto; }
+  .rail button { width: auto; grid-template-columns: 26px auto; }
+  .rail .val { display: none; }
+  .rail .n { grid-row: auto; }
+  .receipt { position: static; }
+}
+@media (max-width: 560px) {
+  .panel { padding: 18px; }
+  .store-badge { display: none; }
+  h2 { font-size: 1.35rem; }
+  .q-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .q-row .acts { grid-column: 1 / -1; justify-content: flex-start; }
+  .mod { grid-template-columns: auto minmax(0, 1fr); }
+  .mod-price { grid-column: 2; text-align: left; }
+  .mod-qty { grid-column: 1 / -1; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-in">
+    <div class="brand"><span class="brand-mark" aria-hidden="true"></span><h1>Angebotsmappe</h1><span class="store-badge" id="store-badge">Angebote nur auf diesem Gerät</span></div>
+    <div class="top-actions" id="top-actions"></div>
+  </div>
+</div>
+<div class="layout" id="layout">
+  <nav class="rail" id="rail" aria-label="Schritte"></nav>
+  <main id="main"></main>
+  <aside class="receipt" id="receipt" aria-label="Kostenübersicht"></aside>
+</div>
+<div id="toast" role="status" hidden></div>
+
+<script>
+/* ============================================================
+   Katalog: alle Preise, Module und Salesforce-Zuordnungen.
+   Wird in den Einstellungen gepflegt und geteilt gespeichert.
+   ============================================================ */
+const DEFAULT_CATALOG = {
+  example: true,
+  vat: 19,
+  validDays: 30,
+  packages: [
+    { id: "L", name: "Paket L", desc: "Voller Funktionsumfang für wachsende Betriebe", monthly: 189, perExtra: 49, sku: "PKG-L" },
+    { id: "M", name: "Paket M", desc: "Kernfunktionen für den Betriebsalltag", monthly: 129, perExtra: 39, sku: "PKG-M" },
+    { id: "KI", name: "KI-Bundle", desc: "Software plus KI-Assistenz, in drei Größen", variants: true }
+  ],
+  kiVariants: [
+    { id: "einzel", name: "Einzelkämpfer", desc: "Für Solo-Selbstständige", monthly: 89, perExtra: 29, sku: "KI-EINZEL" },
+    { id: "betriebe", name: "Betriebe", desc: "Für Teams bis ca. 10 Personen", monthly: 169, perExtra: 45, sku: "KI-BETRIEB" },
+    { id: "mittelstand", name: "Mittelstand", desc: "Für mehrere Abteilungen", monthly: 319, perExtra: 59, sku: "KI-MITTEL" }
+  ],
+  groups: [
+    { id: "none", name: "Kein Partner", monthlyPct: 0, oncePct: 0, months: 0 },
+    { id: "koop", name: "Kooperationspartner", monthlyPct: 10, oncePct: 0, months: 0 },
+    { id: "meister", name: "Meisterschüler", monthlyPct: 30, oncePct: 0, months: 12 },
+    { id: "gruender", name: "Existenzgründer", monthlyPct: 20, oncePct: 0, months: 24 }
+  ],
+  modules: [
+    { id: "wartung", name: "Wartung", desc: "Updates, Support und Fernwartung", pricing: "flat", monthly: 39, perUser: 0, unit: "Nutzer", once: 0, sku: "MOD-WARTUNG", discountable: true },
+    { id: "import", name: "Importmanager", desc: "Datenübernahme aus Fremdsystemen", pricing: "flat", monthly: 25, perUser: 0, unit: "Nutzer", once: 0, sku: "MOD-IMPORT", discountable: true },
+    { id: "app", name: "App", desc: "Mobile App für Monteure und Außendienst", pricing: "perUser", monthly: 19, perUser: 7, unit: "Nutzer", once: 149, sku: "MOD-APP", discountable: false },
+    { id: "tpm", name: "TAIFUN Personalmanager (TPM)", desc: "Personalverwaltung", pricing: "perUser", monthly: 29, perUser: 5, unit: "Nutzer", once: 0, sku: "MOD-TPM", discountable: false }
+  ],
+  cloud: { monthly: 99, included: 3, perExtra: 25, once: 250, sku: "BETR-CLOUD", extraSku: "BETR-CLOUD-AP" },
+  local: { once: 390, sku: "BETR-LOKAL" },
+  training: { rate: 95, travel: 1.5, flatMaxUsers: 4, discountable: false, sku: "SCHULUNG" },
+  trainings: [
+    { id: "allgemein", name: "Online-Schulung TAIFUN allgemein", price: 390, pkgs: ["L", "M"], module: "", sku: "SCH-ALLG" },
+    { id: "doku", name: "Online-Schulung Dokumentenarchiv", price: 190, pkgs: ["L"], module: "", sku: "SCH-DOKU" },
+    { id: "app", name: "Online-Schulung App", price: 149, pkgs: [], module: "app", sku: "SCH-APP" },
+    { id: "tpm", name: "Online-Schulung TPM", price: 149, pkgs: [], module: "tpm", sku: "SCH-TPM" }
+  ],
+  salesforce: {
+    adapter: "outbox",
+    stage: "Proposal/Price Quote",
+    closeDays: 30,
+    nameTemplate: "{company} – {package}",
+    billingField: "Abrechnung__c",
+    exportFields: [
+      { key: "quoteNumber", sf: "Angebotsnummer__c", on: true },
+      { key: "customerType", sf: "Kundenart__c", on: true },
+      { key: "group", sf: "Partnerstatus__c", on: true },
+      { key: "package", sf: "Paket__c", on: true },
+      { key: "hosting", sf: "Betriebsart__c", on: true },
+      { key: "seats", sf: "Arbeitsplaetze__c", on: true },
+      { key: "modules", sf: "Zusatzmodule__c", on: true },
+      { key: "trainings", sf: "Schulungen__c", on: true },
+      { key: "trainingHours", sf: "Schulungsstunden__c", on: true },
+      { key: "monthlyNet", sf: "Monatlich_Netto__c", on: true },
+      { key: "onceNet", sf: "Einmalig_Netto__c", on: true },
+      { key: "discountMonths", sf: "Rabattdauer_Monate__c", on: false },
+      { key: "validUntil", sf: "Gueltig_bis__c", on: true },
+      { key: "note", sf: "Description", on: true },
+      { key: "contact", sf: "Ansprechpartner__c", on: false },
+      { key: "email", sf: "Ansprechpartner_EMail__c", on: false },
+      { key: "customerNo", sf: "Kundennummer__c", on: false }
+    ],
+    importFields: [
+      { sf: "Id", key: "sfAccountId" },
+      { sf: "Name", key: "company" },
+      { sf: "AccountNumber", key: "customerNo" },
+      { sf: "Ansprechpartner__c", key: "contact" },
+      { sf: "E_Mail__c", key: "email" }
+    ]
+  }
+};
+
+const SF_KEYS = {
+  quoteNumber: "Angebotsnummer", company: "Firma", contact: "Ansprechpartner", email: "E-Mail", customerNo: "Kundennummer",
+  customerType: "Kundenart", group: "Partnerstatus", package: "Paket", hosting: "Betriebsart", seats: "Arbeitsplätze",
+  modules: "Zusatzmodule (Liste)", trainings: "Schulungspauschalen", trainingHours: "Schulungsstunden", monthlyNet: "Monatlich netto", onceNet: "Einmalig netto",
+  discountMonths: "Rabattdauer (Monate)", validUntil: "Gültig bis", note: "Bemerkung"
+};
+const IMPORT_KEYS = { company: "Firma", contact: "Ansprechpartner", email: "E-Mail", customerNo: "Kundennummer", sfAccountId: "Salesforce Account-ID", sfOpportunityId: "Salesforce Opportunity-ID" };
+
+const STEPS = [
+  { id: "kunde", label: "Kunde" },
+  { id: "paket", label: "Paket" },
+  { id: "betrieb", label: "Betrieb" },
+  { id: "module", label: "Zusatzmodule" },
+  { id: "schulung", label: "Schulung" },
+  { id: "uebersicht", label: "Übersicht" }
+];
+
+/* ---------- Hilfsfunktionen ---------- */
+const clone = o => JSON.parse(JSON.stringify(o));
+const num = v => { const n = parseFloat(String(v ?? "").replace(",", ".")); return isFinite(n) ? n : 0; };
+const int = v => Math.max(0, Math.round(num(v)));
+const r2 = n => Math.round(n * 100) / 100;
+const EUR = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
+const eur = n => EUR.format(n || 0);
+const fmtDate = d => d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+const isoDate = d => d.toISOString().slice(0, 10);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const $ = id => document.getElementById(id);
+
+function getPath(obj, path) { return path.split(".").reduce((o, k) => (o == null ? undefined : o[k]), obj); }
+function setPath(obj, path, val) {
+  const ks = path.split("."); let o = obj;
+  ks.slice(0, -1).forEach((k, i) => { if (o[k] == null) o[k] = /^\d+$/.test(ks[i + 1]) ? [] : {}; o = o[k]; });
+  o[ks[ks.length - 1]] = val;
+}
+function readVal(t) {
+  if (t.type === "checkbox") return t.checked;
+  if (t.type === "number" || t.dataset.type === "num") return num(t.value);
+  return t.value;
+}
+function lsGet(k, fallback = null) { try { const v = localStorage.getItem("angebotsrechner:" + k); return v ? JSON.parse(v) : fallback; } catch { return fallback; } }
+function lsSet(k, v) { try { localStorage.setItem("angebotsrechner:" + k, JSON.stringify(v)); return true; } catch { return false; } }
+function newQuoteNo() {
+  const d = new Date(), p = n => String(n).padStart(2, "0");
+  return `ANG-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+}
+function mergeCatalog(stored) {
+  const out = clone(DEFAULT_CATALOG);
+  if (!stored) return out;
+  for (const k of Object.keys(stored)) {
+    const v = stored[k];
+    if (v && typeof v === "object" && !Array.isArray(v) && out[k] && typeof out[k] === "object" && !Array.isArray(out[k])) out[k] = { ...out[k], ...v };
+    else out[k] = v;
+  }
+  return out;
+}
+
+/* ---------- Zustand ---------- */
+let catalog = clone(DEFAULT_CATALOG);
+let state = freshState();
+let view = "wizard";           // wizard | settings | quotes
+let draft = null;              // Einstellungs-Entwurf
+let settingsTab = "pakete";
+let settingsDirty = false;
+let quotes = [];
+let centralCatalog = null, localPrices = false; // zentrale Preise aus preise.json, ggf. eigene Preise dieses Geräts
+const caps = { db: null, user: null, downloads: null, canEditSettings: true, shared: false };
+
+function freshState() {
+  // Beispielauswahl, damit der Rechner sofort etwas zeigt
+  return {
+    step: 0, quoteId: null, quoteNo: newQuoteNo(), createdAt: null, sfStatus: "entwurf",
+    customer: { type: "neu", group: "gruender", company: "", contact: "", email: "", customerNo: "", sfAccountId: "", sfOpportunityId: "" },
+    pkg: { id: "M", ki: "betriebe" },
+    hosting: { mode: "cloud", seats: 4 },
+    modules: { wartung: { on: true, qty: 1 }, app: { on: true, qty: 3 } },
+    training: { hours: 0 },
+    trainingSel: {},              // manuelle Abweichung je Schulungspauschale (true/false)
+    manual: { on: false, value: 0 }, // Sonderrabatt in % auf Paket und rabattfähige Module
+    note: ""
+  };
+}
+function ensureModuleState() {
+  for (const m of catalog.modules) if (!state.modules[m.id]) state.modules[m.id] = { on: false, qty: 1 };
+}
+
+/* ============================================================
+   Berechnung
+   ============================================================ */
+function calc(s = state, cat = catalog) {
+  const lines = [];
+  const pkg = cat.packages.find(p => p.id === s.pkg.id) || cat.packages[0];
+  // Paketpreis: 1. Arbeitsplatz plus Preis je weiterem Arbeitsplatz
+  const seats = Math.max(1, int(s.hosting.seats)), extraAp = seats - 1;
+  const pv = pkg.variants ? (cat.kiVariants.find(x => x.id === s.pkg.ki) || cat.kiVariants[0]) : pkg;
+  const pLabel = pkg.variants ? `${pkg.name} ${pv.name}` : pkg.name;
+  lines.push({ id: "pkg", group: "Paket", label: pLabel, detail: extraAp ? `1. AP ${eur(pv.monthly)} + ${extraAp} weitere AP × ${eur(pv.perExtra)}` : `1 AP · ${pv.desc}`,
+    monthly: num(pv.monthly) + extraAp * num(pv.perExtra), once: 0, disc: true, qty: seats,
+    sf: [{ code: pv.sku, desc: `${pLabel} (1. AP)`, qty: 1, unit: num(pv.monthly), bill: "monatlich" }, { code: pv.sku + "-AP", desc: `${pLabel} weiterer AP`, qty: extraAp, unit: num(pv.perExtra), bill: "monatlich" }] });
+
+  if (s.hosting.mode === "cloud") {
+    const cl = cat.cloud, inc = int(cl.included), extra = Math.max(0, seats - inc);
+    lines.push({ id: "cloud", group: "Betrieb", label: "Cloud-Betrieb", detail: `Pauschale inkl. ${inc} Arbeitsplätze`, monthly: num(cl.monthly), once: 0, disc: true,
+      sf: [{ code: cl.sku, desc: `Cloud-Betrieb inkl. ${inc} Arbeitsplätze`, qty: 1, unit: num(cl.monthly), bill: "monatlich" }] });
+    if (extra > 0) lines.push({ id: "cloud-extra", group: "Betrieb", label: "Weitere Arbeitsplätze (Cloud)", detail: `${extra} × ${eur(cl.perExtra)}`, monthly: extra * num(cl.perExtra), once: 0, disc: true,
+      sf: [{ code: cl.extraSku, desc: "Weiterer Arbeitsplatz Cloud", qty: extra, unit: num(cl.perExtra), bill: "monatlich" }] });
+  }
+  // Einrichtung ist immer Teil des Angebots, Preis je nach Betriebsart
+  const cloud = s.hosting.mode === "cloud", setupOnce = num(cloud ? cat.cloud.once : cat.local.once);
+  lines.push({ id: "setup", group: "Einrichtung", label: `Einrichtung ${cloud ? "Cloud" : "lokal"}`, detail: cloud ? "Einrichtung der Cloud-Umgebung" : "Installation auf dem Kundenserver", monthly: 0, once: setupOnce, disc: true,
+    sf: [{ code: cloud ? cat.cloud.sku + "-SETUP" : cat.local.sku, desc: `Einrichtung ${cloud ? "Cloud" : "lokal"}`, qty: 1, unit: setupOnce, bill: "einmalig" }] });
+
+  for (const m of cat.modules) {
+    const sel = s.modules[m.id];
+    if (!sel || !sel.on) continue;
+    if (m.pricing === "perUser") {
+      const q = int(sel.qty);
+      lines.push({ id: "mod-" + m.id, group: "Zusatzmodule", label: m.name, detail: `Grundpreis ${eur(m.monthly)} + ${q} ${m.unit} × ${eur(m.perUser)}`,
+        monthly: num(m.monthly) + q * num(m.perUser), once: num(m.once), disc: m.discountable !== false, qty: q,
+        sf: [{ code: m.sku, desc: `${m.name} Grundpreis`, qty: 1, unit: num(m.monthly), bill: "monatlich" }, { code: m.sku + "-USER", desc: `${m.name} je ${m.unit}`, qty: q, unit: num(m.perUser), bill: "monatlich" }, { code: m.sku + "-SETUP", desc: `Einrichtung ${m.name}`, qty: 1, unit: num(m.once), bill: "einmalig" }] });
+    } else {
+      lines.push({ id: "mod-" + m.id, group: "Zusatzmodule", label: m.name, detail: m.desc, monthly: num(m.monthly), once: num(m.once), disc: m.discountable !== false,
+        sf: [{ code: m.sku, desc: m.name, qty: 1, unit: num(m.monthly), bill: "monatlich" }, { code: m.sku + "-SETUP", desc: `Einrichtung ${m.name}`, qty: 1, unit: num(m.once), bill: "einmalig" }] });
+    }
+  }
+
+  const tr = cat.training, hours = Math.max(0, num(s.training.hours));
+  for (const t of cat.trainings || []) {
+    if (!trainingIncluded(t, s, cat)) continue;
+    lines.push({ id: "train-" + t.id, group: "Schulung", label: t.name, detail: "Online-Pauschale", monthly: 0, once: num(t.price), disc: !!tr.discountable, manual: true,
+      sf: [{ code: t.sku, desc: t.name, qty: 1, unit: num(t.price), bill: "einmalig" }] });
+  }
+  if (hours > 0) {
+    lines.push({ id: "training", group: "Schulung", label: "Schulung nach Stunden", detail: `${fmtH(hours)} Std × ${eur(tr.rate)}`, monthly: 0, once: hours * num(tr.rate), disc: !!tr.discountable,
+      sf: [{ code: tr.sku, desc: "Schulung (Std)", qty: hours, unit: num(tr.rate), bill: "einmalig" }] });
+  }
+
+  const group = s.customer.type === "neu" ? cat.groups.find(g => g.id === s.customer.group) : null;
+  const mPct = group ? num(group.monthlyPct) : 0, oPct = group ? num(group.oncePct) : 0;
+  const months = group && mPct ? int(group.months) : 0;
+  // Sonderrabatt: ein Prozentsatz auf Paket, Cloud und rabattfähige Module – dieselbe Basis wie der
+  // monatliche Konditionsrabatt – und wird zu diesem addiert (20 % + 30 % = 50 %)
+  const special = Math.max(0, num(s.manual && s.manual.value));
+  for (const l of lines) {
+    l.manual = l.disc && l.monthly > 0;
+    const cap = 100 - (l.disc ? (l.monthly ? mPct : oPct) : 0);
+    l.manualPct = l.manual ? Math.min(cap, special) : 0;
+    l.mMan = r2(l.monthly * l.manualPct / 100); l.oMan = r2(l.once * l.manualPct / 100);
+  }
+  const sum = f => r2(lines.reduce((a, l) => a + f(l), 0));
+  const monthlySub = sum(l => l.monthly), onceSub = sum(l => l.once);
+  const mManual = sum(l => l.mMan), oManual = sum(l => l.oMan);
+  const mDisc = r2(sum(l => l.disc ? l.monthly : 0) * mPct / 100), oDisc = r2(sum(l => l.disc ? l.once : 0) * oPct / 100);
+  const monthlyNet = r2(monthlySub - mManual - mDisc), onceNet = r2(onceSub - oManual - oDisc);
+  const vat = num(cat.vat) / 100;
+  const firstYear = r2(onceNet + (months ? Math.min(12, months) * monthlyNet + Math.max(0, 12 - months) * monthlySub : 12 * monthlyNet));
+  return {
+    lines, group, mPct, oPct, months, special, monthlySub, onceSub, mManual, oManual, mDisc, oDisc, monthlyNet, onceNet,
+    monthlyVat: r2(monthlyNet * vat), onceVat: r2(onceNet * vat),
+    monthlyGross: r2(monthlyNet * (1 + vat)), onceGross: r2(onceNet * (1 + vat)),
+    regularMonthly: monthlySub, firstYear, pkgLabel: lines[0].label,
+    noDiscM: lines.filter(l => l.monthly && !l.disc).map(l => l.label)
+  };
+}
+function fmtH(h) { return String(h).replace(".", ","); }
+// Schulungspauschale automatisch vorgesehen: bis X Nutzer, passend zu Paket oder gewähltem Modul
+function trainingAuto(t, s = state, cat = catalog) {
+  if (Math.max(1, int(s.hosting.seats)) > int(cat.training.flatMaxUsers)) return false;
+  return (t.pkgs || []).includes(s.pkg.id) || !!(t.module && s.modules[t.module] && s.modules[t.module].on);
+}
+function trainingIncluded(t, s = state, cat = catalog) {
+  const o = (s.trainingSel || {})[t.id];
+  return o === undefined ? trainingAuto(t, s, cat) : !!o;
+}
+function discountText(g) {
+  const parts = [];
+  if (num(g.monthlyPct)) parts.push(`−${fmtH(num(g.monthlyPct))} % monatlich${int(g.months) ? ` für ${int(g.months)} Monate` : ""}`);
+  if (num(g.oncePct)) parts.push(`−${fmtH(num(g.oncePct))} % einmalig`);
+  return parts.length ? parts.join(" · ") : "Listenpreise";
+}
+function validUntil() { const d = state.createdAt ? new Date(state.createdAt) : new Date(); d.setDate(d.getDate() + int(catalog.validDays)); return d; }
+
+/* ============================================================
+   Salesforce – modulare Schnittstelle
+   Ausgang: buildSfPayload() erzeugt Opportunity + Line Items nach
+   der Feldzuordnung aus den Einstellungen. Ein Adapter übergibt sie.
+   Eingang: importFromSalesforce() mappt einen Account-Datensatz.
+   Weitere Adapter (z. B. Salesforce-Connector) in SF_ADAPTERS ergänzen.
+   ============================================================ */
+function sfValues(c) {
+  const cu = state.customer;
+  return {
+    quoteNumber: state.quoteNo, company: cu.company, contact: cu.contact, email: cu.email, customerNo: cu.customerNo,
+    customerType: cu.type === "neu" ? "Neukunde" : "Bestandskunde",
+    group: c.group ? c.group.name : "",
+    package: c.pkgLabel,
+    hosting: state.hosting.mode === "cloud" ? "Cloud" : "Lokal",
+    seats: Math.max(1, int(state.hosting.seats)),
+    trainings: c.lines.filter(l => l.id.startsWith("train-")).map(l => l.label).join("; "),
+    modules: c.lines.filter(l => l.group === "Zusatzmodule").map(l => l.qty ? `${l.label} (${l.qty})` : l.label).join("; "),
+    trainingHours: Math.max(0, num(state.training.hours)),
+    monthlyNet: c.monthlyNet, onceNet: c.onceNet, discountMonths: c.months,
+    validUntil: isoDate(validUntil()), note: state.note
+  };
+}
+function buildSfPayload(c = calc()) {
+  const sf = catalog.salesforce, vals = sfValues(c);
+  const close = new Date(); close.setDate(close.getDate() + int(sf.closeDays));
+  const opp = {};
+  if (state.customer.sfOpportunityId) opp.Id = state.customer.sfOpportunityId;
+  if (state.customer.sfAccountId) opp.AccountId = state.customer.sfAccountId;
+  opp.Name = String(sf.nameTemplate || "{company}").replace(/\{(\w+)\}/g, (_, k) => vals[k] ?? "").trim() || state.quoteNo;
+  opp.StageName = sf.stage;
+  opp.CloseDate = isoDate(close);
+  for (const f of sf.exportFields) if (f.on && f.sf) opp[f.sf] = vals[f.key];
+  const items = [];
+  for (const l of c.lines) for (const it of l.sf) {
+    if (!num(it.unit) || !it.qty) continue;
+    const row = { ProductCode: it.code, Description: it.desc, Quantity: it.qty, UnitPrice: it.unit };
+    if (l.manualPct) row.Discount = l.manualPct;
+    if (sf.billingField) row[sf.billingField] = it.bill;
+    items.push(row);
+  }
+  return {
+    source: "Angebotsrechner", quoteNumber: state.quoteNo, createdAt: new Date().toISOString(),
+    discount: c.group ? { group: c.group.name, monthlyPct: c.mPct, oncePct: c.oPct, months: c.months, monthlyAmount: c.mDisc, onceAmount: c.oDisc } : null,
+    totals: { specialMonthly: c.mManual, specialOnce: c.oManual, monthlyNet: c.monthlyNet, onceNet: c.onceNet, monthlyGross: c.monthlyGross, onceGross: c.onceGross, vatPct: num(catalog.vat) },
+    Opportunity: opp,
+    OpportunityLineItems: items
+  };
+}
+function importFromSalesforce(text) {
+  let rec = JSON.parse(text);
+  if (rec && Array.isArray(rec.records)) rec = rec.records[0];
+  if (Array.isArray(rec)) rec = rec[0];
+  if (!rec || typeof rec !== "object") throw new Error("Kein Datensatz gefunden.");
+  let n = 0;
+  for (const f of catalog.salesforce.importFields) {
+    const v = getPath(rec, f.sf);
+    if (v != null && v !== "" && IMPORT_KEYS[f.key]) { state.customer[f.key] = String(v); n++; }
+  }
+  return n;
+}
+
+const SF_ADAPTERS = {
+  outbox: {
+    label: "Warteschlange (im Angebot gespeichert)",
+    hint: "Das Angebot wird mit Status „bereit für Salesforce“ gespeichert. Eine Synchronisierung (z. B. Flow, Middleware oder Claude mit Salesforce-Connector) holt es dort ab.",
+    async send() { await saveQuote("bereit"); return "Angebot gespeichert und für Salesforce bereitgestellt."; }
+  },
+  file: {
+    label: "JSON-Datei herunterladen",
+    hint: "Die Salesforce-Daten werden als JSON-Datei gespeichert, z. B. für Data Loader oder einen Import-Flow.",
+    async send(payload) { await downloadJson(payload); return null; }
+  },
+  clipboard: {
+    label: "In Zwischenablage kopieren",
+    hint: "Die Salesforce-Daten werden als JSON kopiert.",
+    send(payload) { return copyJson(payload); }
+  }
+};
+
+/* ============================================================
+   Speicher: geteilte Datenbank, sonst Browser
+   ============================================================ */
+async function saveQuote(sfStatus) {
+  const c = calc();
+  const now = new Date().toISOString();
+  if (!state.createdAt) state.createdAt = now;
+  if (sfStatus) state.sfStatus = sfStatus;
+  const id = state.quoteId || "q-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+  const snap = clone(state); delete snap.step;
+  const doc = {
+    number: state.quoteNo, company: state.customer.company || "", customerType: state.customer.type,
+    packageLabel: c.pkgLabel, hosting: state.hosting.mode, monthlyNet: c.monthlyNet, onceNet: c.onceNet,
+    createdAt: state.createdAt, updatedAt: now, sfStatus: state.sfStatus, state: snap, sfPayload: buildSfPayload(c)
+  };
+  if (caps.db) {
+    try { await caps.db.collection("quotes").doc(id).set(doc); }
+    catch (e) { throw new Error(e && e.code === "invalid_argument" ? "Keine Berechtigung zum Speichern. Bitte Bearbeitungsrechte für diesen Rechner anfragen." : "Speichern fehlgeschlagen. Bitte gleich noch einmal versuchen."); }
+  } else {
+    const all = lsGet("quotes", {}); all[id] = doc;
+    if (!lsSet("quotes", all)) throw new Error("Der Browser erlaubt hier kein Speichern.");
+    quotes = listFromObj(all);
+  }
+  state.quoteId = id;
+}
+async function deleteQuote(id) {
+  if (caps.db) await caps.db.collection("quotes").doc(id).delete();
+  else { const all = lsGet("quotes", {}); delete all[id]; lsSet("quotes", all); quotes = listFromObj(all); }
+}
+async function setQuoteStatus(id, status) {
+  if (caps.db) await caps.db.collection("quotes").doc(id).update({ sfStatus: status, updatedAt: new Date().toISOString() });
+  else { const all = lsGet("quotes", {}); if (all[id]) { all[id].sfStatus = status; lsSet("quotes", all); quotes = listFromObj(all); } }
+}
+function listFromObj(o) { return Object.entries(o || {}).map(([id, d]) => ({ id, ...d })).sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt))); }
+async function saveCatalog(cat) {
+  if (caps.db) {
+    try { await caps.db.doc("settings/catalog").set({ catalog: cat, updatedAt: new Date().toISOString() }); }
+    catch (e) { throw new Error(e && e.code === "invalid_argument" ? "Nur Bearbeiter dürfen die Einstellungen ändern." : "Speichern fehlgeschlagen. Bitte gleich noch einmal versuchen."); }
+  } else {
+    if (!lsSet("catalog", cat)) throw new Error("Der Browser erlaubt hier kein Speichern.");
+    localPrices = true;
+  }
+}
+// Zentrale Preise: preise.json liegt neben der App (GitHub-Repository). Fehlt sie, gelten die eingebauten Beispielwerte.
+async function loadCentral() {
+  try {
+    const r = await fetch("preise.json", { cache: "no-cache" });
+    return r.ok ? mergeCatalog(await r.json()) : null;
+  } catch { return null; }
+}
+
+/* ============================================================
+   Darstellung
+   ============================================================ */
+function render() {
+  ensureModuleState();
+  const layout = $("layout");
+  layout.dataset.mode = view !== "wizard" ? "page" : state.step === STEPS.length - 1 ? "summary" : "wizard";
+  renderTop();
+  if (view === "wizard") { renderRail(); $("main").innerHTML = renderStep(); renderReceipt(); }
+  else if (view === "settings") $("main").innerHTML = renderSettings();
+  else $("main").innerHTML = renderQuotes();
+}
+function renderTop() {
+  $("store-badge").textContent = caps.shared ? "Geteilt gespeichert" : "Angebote nur auf diesem Gerät";
+  $("top-actions").innerHTML = `
+    <button class="btn ${view === "wizard" ? "current" : ""}" data-act="view" data-view="wizard">Angebot</button>
+    <button class="btn ${view === "quotes" ? "current" : ""}" data-act="view" data-view="quotes">Gespeichert${quotes.length ? ` (${quotes.length})` : ""}</button>
+    <button class="btn ${view === "settings" ? "current" : ""}" data-act="view" data-view="settings">Einstellungen</button>
+    <button class="btn primary" data-act="new-quote">Neues Angebot</button>`;
+}
+function railValue(i, c) {
+  const cu = state.customer;
+  switch (STEPS[i].id) {
+    case "kunde": return cu.type === "neu" ? `Neukunde · ${c.group ? c.group.name : ""}` : "Bestandskunde";
+    case "paket": return `${c.pkgLabel} · ${Math.max(1, int(state.hosting.seats))} AP`;
+    case "betrieb": return `${state.hosting.mode === "cloud" ? "Cloud" : "Lokal"} · ${Math.max(1, int(state.hosting.seats))} AP`;
+    case "module": { const n = c.lines.filter(l => l.group === "Zusatzmodule").length; return n ? `${n} gewählt` : "keine"; }
+    case "schulung": { const n = c.lines.filter(l => l.group === "Schulung").length; return n ? `${n} Position${n > 1 ? "en" : ""}` : "keine"; }
+    default: return `${eur(c.monthlyNet)} mtl.`;
+  }
+}
+function renderRail() {
+  const c = calc();
+  $("rail").innerHTML = `<ol>${STEPS.map((s, i) => `
+    <li><button class="${i === state.step ? "active" : i < state.step ? "done" : ""}" data-act="goto" data-step="${i}" ${i === state.step ? 'aria-current="step"' : ""}>
+      <span class="n">${i + 1}</span><span class="lbl">${s.label}</span><span class="val">${esc(railValue(i, c))}</span>
+    </button></li>`).join("")}</ol>`;
+}
+function choice(path, value, title, sub, extra = "", isNum = false) {
+  const on = String(getPath(state, path)) === String(value);
+  return `<button type="button" class="choice ${on ? "on" : ""}" data-act="set" data-path="${path}" data-value="${esc(value)}" ${isNum ? "data-num" : ""} aria-pressed="${on}">
+    <span class="choice-title">${title}</span>${sub ? `<span class="choice-sub">${sub}</span>` : ""}${extra}</button>`;
+}
+function stepper(id, path, min = 0, step = 1) {
+  return `<span class="stepper"><button type="button" data-act="dec" data-path="${path}" data-min="${min}" data-by="${step}" aria-label="Weniger">−</button><input id="${id}" type="number" inputmode="decimal" min="${min}" step="${step}" data-bind="${path}" value="${esc(getPath(state, path))}"><button type="button" data-act="inc" data-path="${path}" data-min="${min}" data-by="${step}" aria-label="Mehr">+</button></span>`;
+}
+function field(id, path, label, opts = {}) {
+  return `<div class="field"><label for="${id}">${label}</label><input id="${id}" type="${opts.type || "text"}" data-bind="${path}" value="${esc(getPath(state, path))}" placeholder="${esc(opts.ph || "")}" autocomplete="off">${opts.hint ? `<span class="hint">${opts.hint}</span>` : ""}</div>`;
+}
+function live(id, f) { return `<span class="money" data-live="${id}" data-f="${f}"></span>`; }
+function head(i, title, lead) {
+  return `<header class="step-head"><p class="eyebrow">Schritt ${i + 1} von ${STEPS.length}</p><h2>${title}</h2>${lead ? `<p class="lead">${lead}</p>` : ""}</header>`;
+}
+function nav() {
+  const i = state.step, last = STEPS.length - 1;
+  return `<div class="nav">
+    ${i > 0 ? `<button class="btn" data-act="prev">← Zurück</button>` : "<span></span>"}
+    ${i < last ? `<button class="btn primary" data-act="next">Weiter: ${STEPS[i + 1].label} →</button>` : ""}
+  </div>`;
+}
+
+function renderStep() {
+  const fn = { kunde: vKunde, paket: vPaket, betrieb: vBetrieb, module: vModule, schulung: vSchulung, uebersicht: vSummary }[STEPS[state.step].id];
+  const html = `<div class="panel">${fn()}${nav()}</div>`;
+  queueMicrotask(updateLive);
+  return html;
+}
+
+function vKunde() {
+  const cu = state.customer;
+  return `${head(0, "Wer bekommt das Angebot?", "Kundenart und Konditionen bestimmen, welche Rabatte im Angebot gelten.")}
+  <fieldset><legend>Kundenart</legend><div class="choices">
+    ${choice("customer.type", "neu", "Neukunde", "Erstes Angebot, Partnerkonditionen möglich")}
+    ${choice("customer.type", "bestand", "Bestandskunde", "Erweiterung oder Umstellung, Listenpreise")}
+  </div></fieldset>
+  ${cu.type === "neu" ? `<fieldset><legend>Konditionen für Neukunden</legend><div class="choices">
+    ${catalog.groups.map(g => choice("customer.group", g.id, esc(g.name), esc(discountText(g)), num(g.monthlyPct) || num(g.oncePct) ? `<span class="tag">Rabatt</span>` : "")).join("")}
+  </div></fieldset>` : ""}
+  <fieldset><legend>Kundendaten</legend><div class="form-grid">
+    ${field("cu-company", "customer.company", "Firma", { ph: "z. B. Holzbau Brandt GmbH" })}
+    ${field("cu-contact", "customer.contact", "Ansprechpartner", { ph: "Vor- und Nachname" })}
+    ${field("cu-email", "customer.email", "E-Mail", { type: "email", ph: "name@firma.de" })}
+    ${cu.type === "bestand" ? field("cu-no", "customer.customerNo", "Kundennummer", { ph: "z. B. K-10482" }) : ""}
+    ${field("cu-sfacc", "customer.sfAccountId", "Salesforce Account-ID", { ph: "001…", hint: "Optional, verknüpft das Angebot mit dem Account" })}
+    ${field("cu-sfopp", "customer.sfOpportunityId", "Salesforce Opportunity-ID", { ph: "006…", hint: "Optional, aktualisiert eine bestehende Opportunity" })}
+  </div></fieldset>
+  <details class="box" id="sf-import-box"><summary>Kundendaten aus Salesforce übernehmen</summary><div>
+    <p class="small muted">Account-Datensatz als JSON einfügen (z. B. aus Workbench, REST-API oder einer SOQL-Abfrage). Welche Felder übernommen werden, steht unter Einstellungen → Salesforce.</p>
+    <textarea id="sf-import-text" class="code" rows="5" placeholder='{"Id": "001…", "Name": "Holzbau Brandt GmbH", "AccountNumber": "K-10482"}'></textarea>
+    <div class="actions"><button class="btn" data-act="sf-import">Daten übernehmen</button><span class="small muted" id="sf-import-msg"></span></div>
+  </div></details>`;
+}
+
+function vPaket() {
+  const ki = catalog.packages.find(p => p.variants);
+  const minKi = Math.min(...catalog.kiVariants.map(v => num(v.monthly)));
+  const sel = catalog.packages.find(p => p.id === state.pkg.id);
+  return `${head(1, "Welches Paket?", "Das Paket wird monatlich abgerechnet: Preis für den 1. Arbeitsplatz (AP) plus Preis je weiterem AP. Einmalige Kosten gibt es für das Paket nicht.")}
+  <fieldset><legend>Paket</legend><div class="choices">
+    ${catalog.packages.map(p => `<button type="button" class="choice pkg ${state.pkg.id === p.id ? "on" : ""}" data-act="set" data-path="pkg.id" data-value="${esc(p.id)}" aria-pressed="${state.pkg.id === p.id}">
+      <span class="choice-title">${esc(p.name)}</span><span class="choice-sub">${esc(p.desc)}</span>
+      ${p.variants ? `<span class="price"><small>ab </small>${eur(minKi)}<small> / Monat</small></span><span class="price-sub">3 Varianten</span>`
+        : `<span class="price">${eur(p.monthly)}<small> / Monat</small></span><span class="price-sub">1. AP · jeder weitere + ${eur(p.perExtra)}</span>`}
+    </button>`).join("")}
+  </div></fieldset>
+  ${sel && sel.variants ? `<fieldset><legend>${esc(ki.name)}: Variante</legend><div class="choices">
+    ${catalog.kiVariants.map(v => `<button type="button" class="choice ${state.pkg.ki === v.id ? "on" : ""}" data-act="set" data-path="pkg.ki" data-value="${esc(v.id)}" aria-pressed="${state.pkg.ki === v.id}">
+      <span class="choice-title">${esc(v.name)}</span><span class="choice-sub">${esc(v.desc)}</span>
+      <span class="price">${eur(v.monthly)}<small> / Monat</small></span><span class="price-sub">1. AP · jeder weitere + ${eur(v.perExtra)}</span>
+    </button>`).join("")}
+  </div></fieldset>` : ""}
+  <fieldset><legend><label for="seats-pkg">Arbeitsplätze (AP) im Hauptprogramm</label></legend>
+    <div class="callout">${stepper("seats-pkg", "hosting.seats", 1)}
+      <div class="small"><span class="muted">Paket gesamt</span> ${live("pkg", "monthly")} <span class="muted">/ Monat</span></div></div>
+  </fieldset>`;
+}
+
+function vBetrieb() {
+  const cl = catalog.cloud, cloud = state.hosting.mode === "cloud";
+  return `${head(2, "Lokal oder in der Cloud?", "Lokal läuft das Hauptprogramm auf dem Server des Kunden. In der Cloud kommt eine monatliche Pauschale dazu. Die Einrichtung ist immer Teil des Angebots.")}
+  <fieldset><legend>Betriebsart</legend><div class="choices">
+    ${choice("hosting.mode", "lokal", "Lokal", `Installation beim Kunden · Einrichtung ${eur(catalog.local.once)} einmalig`)}
+    ${choice("hosting.mode", "cloud", "Cloud", `${eur(cl.monthly)} / Monat inkl. ${int(cl.included)} Arbeitsplätze · jeder weitere ${eur(cl.perExtra)}`)}
+  </div></fieldset>
+  <fieldset><legend><label for="seats">Arbeitsplätze (AP) im Hauptprogramm</label></legend>
+    <div class="callout">
+      ${stepper("seats", "hosting.seats", 1)}
+      ${cloud ? `<div class="small"><span class="muted">Pauschale</span> ${live("cloud", "monthly")} <span class="muted">· weitere Arbeitsplätze</span> ${live("cloud-extra", "monthly")}</div>`
+        : `<div class="small muted">Bis ${int(catalog.training.flatMaxUsers)} Nutzer sind Online-Schulungen als Pauschale hinterlegt.</div>`}
+    </div>
+    ${cloud ? `<p class="small muted">Die ersten ${int(cl.included)} Arbeitsplätze sind in der Cloud-Pauschale enthalten, jeder weitere kostet ${eur(cl.perExtra)} im Monat. Einrichtung Cloud: ${eur(cl.once)} einmalig.</p>` : ""}
+  </fieldset>`;
+}
+
+function vModule() {
+  return `${head(3, "Zusatzmodule", "Module mit Nutzerpreis bestehen aus Grundpreis plus Gebühr je Nutzer. Weitere Module legst du unter Einstellungen → Module an.")}
+  <div class="mods">${catalog.modules.map(m => {
+    const sel = state.modules[m.id] || { on: false, qty: 1 }, per = m.pricing === "perUser";
+    return `<div class="mod ${sel.on ? "on" : ""}">
+      <button type="button" class="switch" role="switch" aria-checked="${!!sel.on}" aria-label="${esc(m.name)} hinzufügen" data-act="toggle-mod" data-id="${esc(m.id)}"></button>
+      <div class="mod-info"><div class="t">${esc(m.name)}</div><div class="d">${esc(m.desc)}</div></div>
+      <div class="mod-price">${per ? `${eur(m.monthly)} + ${eur(m.perUser)}<span class="muted"> je ${esc(m.unit)}</span>` : `${eur(m.monthly)}<span class="muted"> / Monat</span>`}
+        ${num(m.once) ? `<span class="muted" style="display:block">+ ${eur(m.once)} einmalig</span>` : ""}</div>
+      ${sel.on && per ? `<div class="mod-qty"><label class="small" for="q-${esc(m.id)}">Anzahl ${esc(m.unit)}</label>${stepper("q-" + m.id, `modules.${m.id}.qty`, 0)}
+        <span class="small"><span class="muted">ergibt</span> ${live("mod-" + m.id, "monthly")} <span class="muted">/ Monat</span></span></div>` : ""}
+    </div>`;
+  }).join("")}</div>`;
+}
+
+function vSchulung() {
+  const tr = catalog.training, h = num(state.training.hours), max = int(tr.flatMaxUsers), users = Math.max(1, int(state.hosting.seats));
+  const pk = catalog.packages.find(p => p.id === state.pkg.id);
+  const why = t => {
+    const m = t.module && catalog.modules.find(x => x.id === t.module);
+    if ((t.pkgs || []).includes(state.pkg.id)) return `Bei ${pk ? pk.name : "diesem Paket"} vorgesehen`;
+    return m ? `Zum Modul ${m.name}` : "Optional";
+  };
+  return `${head(4, "Schulungen", `Bis ${max} Nutzer sind Online-Schulungen als Pauschale hinterlegt, passend zu Paket und Zusatzmodulen. Nicht benötigte Schulungen schaltest du ab. Dass Anfahrten mit ${eur(tr.travel)} pro Kilometer berechnet werden, steht als Hinweis im Angebot.`)}
+  ${users > max ? `<p class="example-note">Das Angebot hat ${users} Nutzer. Ab ${max + 1} Nutzern sind keine Pauschalen vorgesehen. Plane die Schulung nach Stunden oder schalte Pauschalen manuell zu.</p>` : ""}
+  <fieldset><legend>Schulungspauschalen (online)</legend><div class="mods">${(catalog.trainings || []).map(t => {
+    const on = trainingIncluded(t), o = (state.trainingSel || {})[t.id];
+    return `<div class="mod ${on ? "on" : ""}">
+      <button type="button" class="switch" role="switch" aria-checked="${on}" aria-label="${esc(t.name)}" data-act="toggle-train" data-id="${esc(t.id)}"></button>
+      <div class="mod-info"><div class="t">${esc(t.name)}</div><div class="d">${esc(why(t))}${o !== undefined ? " · manuell geändert" : ""}</div></div>
+      <div class="mod-price">${eur(t.price)}<span class="muted"> einmalig</span></div>
+    </div>`;
+  }).join("")}</div></fieldset>
+  <fieldset><legend><label for="hours">Zusätzliche Schulungsstunden</label></legend>
+    <div class="callout">
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">${stepper("hours", "training.hours", 0)}
+        <div class="chips">${[0, 4, 8, 16].map(n => `<button type="button" class="chip ${h === n ? "on" : ""}" data-act="set" data-path="training.hours" data-value="${n}" data-num>${n} Std</button>`).join("")}</div></div>
+      <div class="small"><span class="muted">nach Stunden zu ${eur(tr.rate)}</span> ${live("training", "once")}</div>
+    </div>
+  </fieldset>
+  <div class="field"><label for="note">Bemerkung zum Angebot</label><textarea id="note" data-bind="note" placeholder="z. B. Datenübernahme aus Altsystem bis 31.01. vereinbart">${esc(state.note)}</textarea></div>`;
+}
+
+function costRows(c, f) {
+  return c.lines.filter(l => l[f]).map(l => {
+    const d = `<span class="d">${esc(f === "once" && l.group === "Zusatzmodule" ? "Einrichtungsgebühr" : l.detail || "")}</span>`;
+    const gp = l.disc ? (f === "monthly" ? c.mPct : c.oPct) : 0;
+    const total = l.manualPct && gp ? ` · insgesamt −${fmtH(r2(l.manualPct + gp))} %` : "";
+    const extra = l.manualPct ? `<span class="d man">−${fmtH(l.manualPct)} % Sonderrabatt${total}</span>` : "";
+    return `<tr><td>${esc(l.label)}${d}${extra}</td><td class="m">${eur(l[f])}</td></tr>`;
+  }).join("");
+}
+function vSummary() {
+  const c = calc(), cu = state.customer, sf = catalog.salesforce, ad = SF_ADAPTERS[sf.adapter] || SF_ADAPTERS.outbox;
+  const statusPill = { entwurf: ["Entwurf", ""], bereit: ["Bereit für Salesforce", "acc"], uebertragen: ["An Salesforce übertragen", "good"] }[state.sfStatus] || ["Entwurf", ""];
+  const mRows = costRows(c, "monthly"), oRows = costRows(c, "once");
+  return `<div class="sum-head">
+    <div class="step-head"><p class="eyebrow">Schritt 6 von 6 · Angebot ${esc(state.quoteNo)}</p>
+      <h2>${cu.company ? esc(cu.company) : `<span class="muted">Firma noch nicht eingetragen</span>`}</h2>
+      <div class="sum-meta">
+        <span class="pill">${cu.type === "neu" ? "Neukunde" : "Bestandskunde"}</span>
+        ${c.group && (c.mPct || c.oPct) ? `<span class="pill deal">${esc(c.group.name)}</span>` : ""}
+        <span class="pill">${esc(c.pkgLabel)}</span>
+        <span class="pill">${state.hosting.mode === "cloud" ? `Cloud · ${Math.max(1, int(state.hosting.seats))} Arbeitsplätze` : "Lokal"}</span>
+        ${state.quoteId ? `<span class="pill ${statusPill[1]}">${statusPill[0]}</span>` : ""}
+      </div>
+    </div>
+    <p class="small muted">Erstellt ${fmtDate(state.createdAt ? new Date(state.createdAt) : new Date())} · gültig bis ${fmtDate(validUntil())}</p>
+  </div>
+
+  <div class="sum-cols">
+    <section class="cost-card m"><header><h3>Monatliche Kosten</h3><span class="small muted">netto je Monat</span></header>
+      ${mRows ? `<table><tbody>${mRows}
+        ${c.mDisc || c.mManual ? `<tr class="sub"><td>Zwischensumme</td><td class="m">${eur(c.monthlySub)}</td></tr>` : ""}
+        ${c.mManual ? `<tr class="disc"><td>Sonderrabatt −${fmtH(c.special)} %<span class="d">auf Paket, Cloud und Module${c.noDiscM.length ? ` · gilt nicht für ${esc(c.noDiscM.join(", "))}` : ""}</span></td><td class="m">−${eur(c.mManual)}</td></tr>` : ""}
+        ${c.mDisc ? `<tr class="disc"><td>${esc(c.group.name)} −${fmtH(c.mPct)} %<span class="d">${c.months ? `in den ersten ${c.months} Monaten` : "dauerhaft"}${c.noDiscM.length ? ` · gilt nicht für ${esc(c.noDiscM.join(", "))}` : ""}</span></td><td class="m">−${eur(c.mDisc)}</td></tr>` : ""}
+      </tbody></table>
+      <div class="grand"><span>Monatlich netto</span><span class="money">${eur(c.monthlyNet)}</span></div>` : `<p class="empty">Keine monatlichen Kosten.</p>`}
+    </section>
+    <section class="cost-card o"><header><h3>Einmalige Kosten</h3><span class="small muted">netto</span></header>
+      ${oRows ? `<table><tbody>${oRows}
+        ${c.oDisc || c.oManual ? `<tr class="sub"><td>Zwischensumme</td><td class="m">${eur(c.onceSub)}</td></tr>` : ""}
+        ${c.oManual ? `<tr class="disc"><td>Sonderrabatt</td><td class="m">−${eur(c.oManual)}</td></tr>` : ""}
+        ${c.oDisc ? `<tr class="disc"><td>${esc(c.group.name)} −${fmtH(c.oPct)} %${catalog.training.discountable ? "" : `<span class="d">gilt nicht für Schulung</span>`}</td><td class="m">−${eur(c.oDisc)}</td></tr>` : ""}
+      </tbody></table>
+      <div class="grand"><span>Einmalig netto</span><span class="money">${eur(c.onceNet)}</span></div>` : `<p class="empty">Keine einmaligen Kosten.</p>`}
+    </section>
+  </div>
+
+  <div class="facts">
+    ${c.mDisc || c.oDisc || c.mManual || c.oManual ? `<div class="fact"><span class="small muted">${c.months ? `Ersparnis über ${c.months} Monate` : "Ersparnis pro Jahr"}</span><span class="money">${eur(r2(c.oDisc + c.oManual + (c.mDisc + c.mManual) * (c.months || 12)))}</span></div>` : ""}
+  </div>
+  <p class="small"><span class="muted">Hinweis:</span> Alle Preise zzgl. gesetzlicher MwSt. Für Termine vor Ort wird die Anfahrt mit ${eur(catalog.training.travel)} pro gefahrenem Kilometer berechnet.</p>
+  ${state.note ? `<p class="small"><span class="muted">Bemerkung:</span> ${esc(state.note)}</p>` : ""}
+  ${catalog.example ? `<p class="example-note">Berechnet mit Beispielpreisen. Trage unter Einstellungen eure echten Preise ein.</p>` : ""}
+
+  <div class="actions">
+    <button class="btn" data-act="save-quote">${state.quoteId ? "Änderungen speichern" : "Angebot speichern"}</button>
+    <button class="btn primary" data-act="sf-send">An Salesforce übergeben</button>
+    <span class="small muted">Übergabe per ${esc(ad.label)}</span>
+    <button class="sneaky ${state.manual && state.manual.on ? "on" : ""}" data-act="toggle-manual" title="Sonderkonditionen" aria-label="Sonderkonditionen" aria-pressed="${!!(state.manual && state.manual.on)}">%</button>
+  </div>
+  ${state.manual && state.manual.on ? `<div class="man-box"><div class="man-row"><label for="soko">Sonderrabatt</label><input id="soko" type="number" min="0" max="100" step="1" data-bind="manual.value" value="${num(state.manual.value) || ""}" placeholder="0"><span>%</span>${num(state.manual.value) ? `<button class="linkish" data-act="clear-manual">entfernen</button>` : ""}</div><p class="small muted">Gilt für Paket, Cloud und alle rabattfähigen Module (nicht App und TPM), also dieselben Positionen wie der Konditionsrabatt, und kommt zu diesem dazu, z. B. 20 % + 30 % = 50 %.</p></div>` : ""}
+
+  <details class="box" id="sf-box"><summary>Salesforce-Daten ansehen</summary><div>
+    <p class="small muted">${esc(ad.hint)} Feldnamen und Produktcodes stellst du unter Einstellungen → Salesforce ein.</p>
+    <pre class="json" id="sf-json">${esc(JSON.stringify(buildSfPayload(c), null, 2))}</pre>
+    <div class="actions"><button class="btn sm" data-act="copy-json">JSON kopieren</button><button class="btn sm" data-act="download-json">JSON-Datei speichern</button></div>
+  </div></details>`;
+}
+
+function renderReceipt() {
+  const c = calc();
+  const groups = ["Paket", "Betrieb", "Einrichtung", "Zusatzmodule", "Schulung"];
+  const rows = groups.map(g => c.lines.filter(l => l.group === g).map(l =>
+    `<tr><td>${esc(l.label)}${l.detail && (l.qty || l.id === "cloud-extra" || l.group === "Schulung") ? `<span class="d">${esc(l.detail)}</span>` : ""}</td><td class="m">${l.monthly ? eur(l.monthly) : "–"}</td><td class="m">${l.once ? eur(l.once) : "–"}</td></tr>`).join("")).join("");
+  $("receipt").innerHTML = `
+    <div class="receipt-head"><h3>Kostenübersicht</h3><span class="small muted num">${esc(state.quoteNo)}</span></div>
+    <table><thead><tr><th>Position</th><th>mtl.</th><th>einm.</th></tr></thead><tbody>${rows}
+      ${c.mManual || c.oManual ? `<tr class="disc"><td>Sonderrabatt</td><td class="m">${c.mManual ? "−" + eur(c.mManual) : "–"}</td><td class="m">${c.oManual ? "−" + eur(c.oManual) : "–"}</td></tr>` : ""}
+      ${c.mDisc || c.oDisc ? `<tr class="disc"><td>${esc(c.group.name)}<span class="d">${esc(discountText(c.group))}</span></td><td class="m">${c.mDisc ? "−" + eur(c.mDisc) : "–"}</td><td class="m">${c.oDisc ? "−" + eur(c.oDisc) : "–"}</td></tr>` : ""}
+    </tbody></table>
+    <div class="totals">
+      <div class="tot m"><span class="small muted">Monatlich netto</span><span class="money">${eur(c.monthlyNet)}</span></div>
+      <div class="tot"><span class="small muted">Einmalig netto</span><span class="money">${eur(c.onceNet)}</span></div>
+    </div>
+    ${catalog.example ? `<p class="example-note">Beispielpreise. Echte Preise unter Einstellungen eintragen.</p>` : ""}
+    ${localPrices && !caps.shared ? `<p class="example-note">Dieses Gerät nutzt eigene Preise statt der zentralen.</p>` : ""}`;
+}
+function updateLive() {
+  if (view !== "wizard") return;
+  const c = calc(), byId = Object.fromEntries(c.lines.map(l => [l.id, l]));
+  document.querySelectorAll("[data-live]").forEach(el => { const l = byId[el.dataset.live]; el.textContent = l ? eur(l[el.dataset.f]) : eur(0); });
+  renderReceipt();
+  renderRail();
+}
+
+/* ---------- Gespeicherte Angebote ---------- */
+function renderQuotes() {
+  const st = { entwurf: "Entwurf", bereit: "Bereit für Salesforce", uebertragen: "Übertragen" };
+  return `<div class="panel">
+    <div class="page-head"><div class="step-head"><p class="eyebrow">${caps.shared ? "Für alle mit Zugriff sichtbar" : "Nur in diesem Browser gespeichert"}</p><h2>Gespeicherte Angebote</h2></div>
+      <button class="btn primary" data-act="new-quote">Neues Angebot</button></div>
+    ${quotes.length ? `<div class="q-list">${quotes.map(q => `<div class="q-row">
+      <div><div class="t">${esc(q.company || "Ohne Firmenname")}</div><div class="small muted num">${esc(q.number)} · ${q.updatedAt ? fmtDate(new Date(q.updatedAt)) : ""}</div></div>
+      <div class="small">${esc(q.packageLabel || "")}<br><span class="muted">${q.hosting === "cloud" ? "Cloud" : "Lokal"} · ${q.customerType === "bestand" ? "Bestandskunde" : "Neukunde"}</span></div>
+      <div class="money">${eur(q.monthlyNet)} <span class="muted">mtl.</span><br>${eur(q.onceNet)} <span class="muted">einm.</span></div>
+      <div class="acts">
+        <select data-qstatus="${esc(q.id)}" aria-label="Salesforce-Status">${Object.entries(st).map(([k, v]) => `<option value="${k}" ${q.sfStatus === k ? "selected" : ""}>${v}</option>`).join("")}</select>
+        <button class="btn sm" data-act="open-quote" data-id="${esc(q.id)}">Öffnen</button>
+        <button class="btn sm danger" data-act="del-quote" data-id="${esc(q.id)}">Löschen</button>
+      </div></div>`).join("")}</div>`
+      : `<div class="empty-state">Noch keine Angebote gespeichert. Auf der Übersichtsseite eines Angebots auf „Angebot speichern“ klicken.</div>`}
+  </div>`;
+}
+
+/* ---------- Einstellungen ---------- */
+function ci(path, opts = {}) {
+  const v = getPath(draft, path), isNum = opts.num;
+  return `<input id="c-${path}" ${isNum ? 'type="number" step="0.01" data-type="num"' : 'type="text"'} data-cbind="${path}" value="${esc(v)}" aria-label="${esc(opts.label || path)}" ${opts.w ? `style="width:${opts.w}"` : ""}>`;
+}
+function cc(path, label) { return `<input id="c-${path}" type="checkbox" data-cbind="${path}" ${getPath(draft, path) ? "checked" : ""} aria-label="${esc(label)}">`; }
+function cfield(path, label, hint, isNum = true) {
+  return `<div class="field"><label for="c-${path}">${label}</label>${ci(path, { num: isNum, label })}${hint ? `<span class="hint">${hint}</span>` : ""}</div>`;
+}
+function renderSettings() {
+  if (!draft) draft = clone(catalog);
+  const tabs = { pakete: "Pakete & KI-Bundle", konditionen: "Konditionen", module: "Module", schulung: "Schulungen", betrieb: "Cloud & Allgemein", salesforce: "Salesforce" };
+  const ro = !caps.canEditSettings;
+  let body = "";
+  if (settingsTab === "pakete") {
+    body = `<h3>Pakete</h3><div class="table-wrap"><table class="edit"><thead><tr><th>Name</th><th>Beschreibung</th><th>€ 1. AP / Monat</th><th>€ je weiterer AP</th><th>Produktcode</th></tr></thead><tbody>
+      ${draft.packages.map((p, i) => `<tr><td>${ci(`packages.${i}.name`, { label: "Name" })}</td><td>${ci(`packages.${i}.desc`, { label: "Beschreibung" })}</td>
+        ${p.variants ? `<td colspan="3" class="small muted">Preise je Variante, siehe unten</td>` : `<td>${ci(`packages.${i}.monthly`, { num: 1, label: "1. AP" })}</td><td>${ci(`packages.${i}.perExtra`, { num: 1, label: "Je weiterer AP" })}</td><td>${ci(`packages.${i}.sku`, { label: "Produktcode" })}</td>`}</tr>`).join("")}
+      </tbody></table></div>
+      <h3>KI-Bundle Varianten</h3><div class="table-wrap"><table class="edit"><thead><tr><th>Name</th><th>Beschreibung</th><th>€ 1. AP / Monat</th><th>€ je weiterer AP</th><th>Produktcode</th></tr></thead><tbody>
+      ${draft.kiVariants.map((v, i) => `<tr><td>${ci(`kiVariants.${i}.name`, { label: "Name" })}</td><td>${ci(`kiVariants.${i}.desc`, { label: "Beschreibung" })}</td><td>${ci(`kiVariants.${i}.monthly`, { num: 1, label: "1. AP" })}</td><td>${ci(`kiVariants.${i}.perExtra`, { num: 1, label: "Je weiterer AP" })}</td><td>${ci(`kiVariants.${i}.sku`, { label: "Produktcode" })}</td></tr>`).join("")}
+      </tbody></table></div>`;
+  } else if (settingsTab === "konditionen") {
+    body = `<p class="small muted">Gilt nur für Neukunden. Der Monatsrabatt läuft für die angegebene Dauer, 0 Monate bedeutet dauerhaft. Standard ist nur ein Monatsrabatt, der Einmalrabatt steht deshalb auf 0. Welche Module rabattfähig sind, stellst du unter Module ein.</p>
+      <div class="table-wrap"><table class="edit"><thead><tr><th>Bezeichnung</th><th>Rabatt monatlich %</th><th>Dauer Monate</th><th>Rabatt einmalig %</th><th></th></tr></thead><tbody>
+      ${draft.groups.map((g, i) => `<tr><td>${ci(`groups.${i}.name`, { label: "Bezeichnung" })}</td><td>${ci(`groups.${i}.monthlyPct`, { num: 1, label: "Rabatt monatlich" })}</td><td>${ci(`groups.${i}.months`, { num: 1, label: "Dauer" })}</td><td>${ci(`groups.${i}.oncePct`, { num: 1, label: "Rabatt einmalig" })}</td>
+        <td>${g.id === "none" ? "" : `<button class="btn sm danger" data-act="del-row" data-list="groups" data-i="${i}">Entfernen</button>`}</td></tr>`).join("")}
+      </tbody></table></div>
+      <div><button class="btn sm" data-act="add-group">Kondition hinzufügen</button></div>
+      <label class="small" style="display:flex;gap:8px;align-items:center">${cc("training.discountable", "Rabatt gilt auch für Schulungen")} Einmalrabatt gilt auch für Schulungen</label>`;
+  } else if (settingsTab === "module") {
+    body = `<p class="small muted">Preismodell „Pauschal“: fester Monatspreis. „Grundpreis + je Nutzer“: Grundpreis plus Anzahl × Nutzergebühr; die Anzahl wird im Angebot abgefragt. „€ einmalig“ bleibt bei 0, außer das Modul hat eine Einrichtungsgebühr.</p>
+      <div class="table-wrap"><table class="edit"><thead><tr><th>Modul</th><th>Beschreibung</th><th>Preismodell</th><th>€ / Monat (Grundpreis)</th><th>€ je Einheit</th><th>Einheit</th><th>€ einmalig</th><th>Produktcode</th><th>Rabatt</th><th></th></tr></thead><tbody>
+      ${draft.modules.map((m, i) => `<tr><td>${ci(`modules.${i}.name`, { label: "Modul" })}</td><td>${ci(`modules.${i}.desc`, { label: "Beschreibung" })}</td>
+        <td><select id="c-modules.${i}.pricing" data-cbind="modules.${i}.pricing" aria-label="Preismodell"><option value="flat" ${m.pricing === "flat" ? "selected" : ""}>Pauschal</option><option value="perUser" ${m.pricing === "perUser" ? "selected" : ""}>Grundpreis + je Nutzer</option></select></td>
+        <td>${ci(`modules.${i}.monthly`, { num: 1, label: "Grundpreis" })}</td>
+        <td>${m.pricing === "perUser" ? ci(`modules.${i}.perUser`, { num: 1, label: "Preis je Einheit" }) : `<span class="muted">–</span>`}</td>
+        <td>${m.pricing === "perUser" ? ci(`modules.${i}.unit`, { label: "Einheit", w: "90px" }) : `<span class="muted">–</span>`}</td>
+        <td>${ci(`modules.${i}.once`, { num: 1, label: "Einmalig" })}</td><td>${ci(`modules.${i}.sku`, { label: "Produktcode" })}</td>
+        <td class="c"><input id="c-modules.${i}.discountable" type="checkbox" data-cbind="modules.${i}.discountable" ${m.discountable !== false ? "checked" : ""} aria-label="Rabattfähig"></td>
+        <td><button class="btn sm danger" data-act="del-row" data-list="modules" data-i="${i}">Entfernen</button></td></tr>`).join("")}
+      </tbody></table></div>
+      <div><button class="btn sm" data-act="add-module">Modul hinzufügen</button></div>`;
+  } else if (settingsTab === "schulung") {
+    body = `<p class="small muted">Pauschalen kommen automatisch ins Angebot, wenn das Paket angehakt oder das Modul gewählt ist, und nur bis zur eingestellten Nutzerzahl. Im Angebot lassen sie sich einzeln abschalten.</p>
+      <div class="form-grid">${cfield("training.flatMaxUsers", "Pauschalen automatisch bis Nutzer")}${cfield("training.rate", "Stundensatz € (zusätzliche Stunden)")}${cfield("training.travel", "Anfahrt € pro Kilometer", "Erscheint als Hinweis im Angebot, nicht in der Summe")}${cfield("training.sku", "Produktcode Schulungsstunden", "", false)}</div>
+      <div class="table-wrap"><table class="edit"><thead><tr><th>Schulung</th><th>€ einmalig</th>${draft.packages.map(p => `<th>${esc(p.name)}</th>`).join("")}<th>Bei Modul</th><th>Produktcode</th><th></th></tr></thead><tbody>
+      ${(draft.trainings || []).map((t, i) => `<tr><td>${ci(`trainings.${i}.name`, { label: "Schulung" })}</td><td>${ci(`trainings.${i}.price`, { num: 1, label: "Preis" })}</td>
+        ${draft.packages.map(p => `<td class="c"><input type="checkbox" id="tp-${i}-${esc(p.id)}" data-act="toggle-tpkg" data-i="${i}" data-pkg="${esc(p.id)}" ${(t.pkgs || []).includes(p.id) ? "checked" : ""} aria-label="Automatisch bei ${esc(p.name)}"></td>`).join("")}
+        <td><select id="c-trainings.${i}.module" data-cbind="trainings.${i}.module" aria-label="Bei Modul"><option value="">–</option>${draft.modules.map(m => `<option value="${esc(m.id)}" ${t.module === m.id ? "selected" : ""}>${esc(m.name)}</option>`).join("")}</select></td>
+        <td>${ci(`trainings.${i}.sku`, { label: "Produktcode" })}</td>
+        <td><button class="btn sm danger" data-act="del-row" data-list="trainings" data-i="${i}">Entfernen</button></td></tr>`).join("")}
+      </tbody></table></div>
+      <div><button class="btn sm" data-act="add-training">Schulung hinzufügen</button></div>`;
+  } else if (settingsTab === "betrieb") {
+    body = `<h3>Cloud-Betrieb</h3><div class="form-grid">
+        ${cfield("cloud.monthly", "Pauschale € / Monat")}${cfield("cloud.included", "Enthaltene Arbeitsplätze")}${cfield("cloud.perExtra", "Je weiterer Arbeitsplatz € / Monat")}${cfield("cloud.once", "Einrichtung Cloud € einmalig")}
+        ${cfield("cloud.sku", "Produktcode Pauschale", "", false)}${cfield("cloud.extraSku", "Produktcode weiterer Arbeitsplatz", "", false)}</div>
+      <h3>Lokaler Betrieb</h3><div class="form-grid">${cfield("local.once", "Einrichtung lokal € einmalig")}${cfield("local.sku", "Produktcode", "", false)}</div>
+      <h3>Allgemein</h3><div class="form-grid">${cfield("vat", "MwSt. %")}${cfield("validDays", "Angebot gültig (Tage)")}</div>`;
+  } else {
+    const sf = draft.salesforce;
+    body = `<div class="form-grid">
+        <div class="field"><label for="c-salesforce.adapter">Übergabe an Salesforce</label><select id="c-salesforce.adapter" data-cbind="salesforce.adapter">
+          ${Object.entries(SF_ADAPTERS).map(([k, a]) => `<option value="${k}" ${sf.adapter === k ? "selected" : ""}>${esc(a.label)}</option>`).join("")}</select>
+          <span class="hint">${esc((SF_ADAPTERS[sf.adapter] || SF_ADAPTERS.outbox).hint)}</span></div>
+        ${cfield("salesforce.nameTemplate", "Opportunity-Name", "Platzhalter: {company}, {package}, {quoteNumber}, {hosting}", false)}
+        ${cfield("salesforce.stage", "Phase (StageName)", "", false)}
+        ${cfield("salesforce.closeDays", "Abschlussdatum in Tagen")}
+        ${cfield("salesforce.billingField", "Feld Abrechnungsart am Line Item", "Wert: monatlich oder einmalig. Leer lassen, wenn nicht vorhanden.", false)}
+      </div>
+      <h3>Ausgang: Angebot → Opportunity</h3>
+      <div class="table-wrap"><table class="edit" style="min-width:520px"><thead><tr><th>Wert aus dem Angebot</th><th>Salesforce-Feld (API-Name)</th><th>Übertragen</th></tr></thead><tbody>
+        ${sf.exportFields.map((f, i) => `<tr><td>${esc(SF_KEYS[f.key] || f.key)}</td><td>${ci(`salesforce.exportFields.${i}.sf`, { label: "Salesforce-Feld" })}</td><td class="c">${cc(`salesforce.exportFields.${i}.on`, "Übertragen")}</td></tr>`).join("")}
+      </tbody></table></div>
+      <h3>Eingang: Account → Kundendaten</h3>
+      <div class="table-wrap"><table class="edit" style="min-width:520px"><thead><tr><th>Salesforce-Feld (API-Name)</th><th>Feld im Angebot</th><th></th></tr></thead><tbody>
+        ${sf.importFields.map((f, i) => `<tr><td>${ci(`salesforce.importFields.${i}.sf`, { label: "Salesforce-Feld" })}</td>
+          <td><select id="c-salesforce.importFields.${i}.key" data-cbind="salesforce.importFields.${i}.key" aria-label="Feld im Angebot">${Object.entries(IMPORT_KEYS).map(([k, v]) => `<option value="${k}" ${f.key === k ? "selected" : ""}>${v}</option>`).join("")}</select></td>
+          <td><button class="btn sm danger" data-act="del-row" data-list="salesforce.importFields" data-i="${i}">Entfernen</button></td></tr>`).join("")}
+      </tbody></table></div>
+      <div><button class="btn sm" data-act="add-import">Zuordnung hinzufügen</button></div>`;
+  }
+  return `<div class="panel">
+    <div class="page-head"><div class="step-head"><p class="eyebrow">${caps.shared ? "Gilt für alle, die diesen Rechner nutzen" : localPrices ? "Dieses Gerät nutzt eigene Preise" : "Zentrale Preise aus preise.json"}</p><h2>Einstellungen</h2></div></div>
+    ${caps.shared ? "" : `<p class="small muted" style="max-width:75ch">Die Preise kommen zentral aus der Datei <code>preise.json</code> im GitHub-Repository. Um sie für alle zu ändern: hier anpassen, <b>Als preise.json sichern</b> und die Datei im Repository ersetzen. <b>Nur auf diesem Gerät speichern</b> gilt nur für dieses Gerät und hat dort Vorrang vor den zentralen Preisen.</p>`}
+    ${draft.example ? `<p class="example-note">Aktuell sind Beispielpreise hinterlegt. Trage eure echten Preise ein und speichere.</p>` : ""}
+    ${ro ? `<p class="example-note">Du kannst die Einstellungen ansehen. Ändern dürfen nur Bearbeiter dieses Rechners.</p>` : ""}
+    <div class="tabs" role="tablist">${Object.entries(tabs).map(([k, v]) => `<button role="tab" aria-selected="${settingsTab === k}" class="${settingsTab === k ? "on" : ""}" data-act="tab" data-tab="${k}">${v}</button>`).join("")}</div>
+    ${body}
+    <div class="settings-bar nav">
+      ${caps.shared ? `<button class="btn danger" data-act="reset-settings" ${ro ? "disabled" : ""}>Auf Beispielwerte zurücksetzen</button>`
+        : localPrices ? `<button class="btn danger" data-act="use-central">Zentrale Preise verwenden</button>` : "<span></span>"}
+      <div class="actions"><span class="status-line" id="settings-status">${settingsDirty ? "Ungespeicherte Änderungen" : ""}</span>
+        <button class="btn" data-act="cancel-settings">Verwerfen</button>
+        ${caps.shared ? `<button class="btn primary" data-act="save-settings" ${ro ? "disabled" : ""}>Einstellungen speichern</button>`
+          : `<button class="btn" data-act="save-settings">Nur auf diesem Gerät speichern</button><button class="btn primary" data-act="export-catalog">Als preise.json sichern</button>`}</div>
+    </div>
+  </div>`;
+}
+
+/* ---------- Toast & Datei/Clipboard ---------- */
+let toastT;
+function toast(msg, action) {
+  const t = $("toast"); t.textContent = msg; t.hidden = false;
+  if (action) {
+    const b = document.createElement("button"); b.className = "toast-btn"; b.textContent = action.label;
+    b.addEventListener("click", action.fn); t.append(" ", b);
+  }
+  clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, action ? 15000 : 3800);
+}
+// Datei an den Nutzer geben: in claude.ai über die Download-Funktion, sonst als normaler Browser-Download
+function saveFile(filename, text) {
+  if (caps.downloads) return caps.downloads.save({ filename, data: text });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+  a.download = filename; document.body.append(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  return Promise.resolve();
+}
+function copyJson(payload) {
+  const text = JSON.stringify(payload, null, 2);
+  const fallback = () => {
+    const box = $("sf-box"); if (box) box.open = true;
+    const pre = $("sf-json"); if (pre) { const r = document.createRange(); r.selectNodeContents(pre); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+    return "Kopieren nicht erlaubt. Der Text ist markiert, bitte mit Strg+C kopieren.";
+  };
+  try {
+    return navigator.clipboard.writeText(text).then(() => "Salesforce-Daten kopiert.").catch(fallback);
+  } catch { return Promise.resolve(fallback()); }
+}
+async function downloadJson(payload) {
+  try {
+    await saveFile(`${state.quoteNo}.json`, JSON.stringify(payload, null, 2));
+    toast("Datei gespeichert.");
+  } catch (e) { if (e && e.code !== "declined") toast("Die Datei konnte nicht gespeichert werden."); }
+}
+
+/* ============================================================
+   Ereignisse
+   ============================================================ */
+function rerenderKeepFocus() {
+  const a = document.activeElement, id = a && a.id;
+  render();
+  if (id) { const el = document.getElementById(id); if (el) el.focus({ preventScroll: true }); }
+}
+// Ein Zahlenfeld meldet "change" beim Verlassen, also schon beim Maus-Drücken auf einen Button.
+// Neu zeichnen erst nach dem Loslassen, sonst geht der Klick auf den Button verloren.
+let pointerDown = false, pendingRender = false;
+document.addEventListener("pointerdown", () => { pointerDown = true; }, true);
+document.addEventListener("pointerup", () => {
+  pointerDown = false;
+  if (pendingRender) setTimeout(() => { if (pendingRender) { pendingRender = false; rerenderKeepFocus(); } }, 0);
+}, true);
+function softRerender() { if (pointerDown) pendingRender = true; else rerenderKeepFocus(); }
+const armed = new Map();
+function arm(btn, key, label) {
+  if (armed.get(key)) { armed.delete(key); return true; }
+  armed.set(key, true); const old = btn.textContent; btn.textContent = label; btn.classList.add("armed");
+  setTimeout(() => { armed.delete(key); if (btn.isConnected) { btn.textContent = old; btn.classList.remove("armed"); } }, 4000);
+  return false;
+}
+
+document.addEventListener("click", async e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const act = b.dataset.act;
+  switch (act) {
+    case "set": setPath(state, b.dataset.path, "num" in b.dataset ? num(b.dataset.value) : b.dataset.value); rerenderKeepFocus(); break;
+    case "inc": case "dec": {
+      const p = b.dataset.path, by = num(b.dataset.by || 1), min = num(b.dataset.min || 0);
+      setPath(state, p, Math.max(min, num(getPath(state, p)) + (act === "inc" ? by : -by))); rerenderKeepFocus(); break;
+    }
+    case "goto": state.step = +b.dataset.step; render(); scrollTo({ top: 0 }); break;
+    case "next": state.step = Math.min(STEPS.length - 1, state.step + 1); render(); scrollTo({ top: 0 }); break;
+    case "prev": state.step = Math.max(0, state.step - 1); render(); scrollTo({ top: 0 }); break;
+    case "toggle-mod": { const m = state.modules[b.dataset.id] || (state.modules[b.dataset.id] = { on: false, qty: 1 }); m.on = !m.on; rerenderKeepFocus(); break; }
+    case "view":
+      if (b.dataset.view === "settings" && view !== "settings") { draft = clone(catalog); settingsDirty = false; }
+      view = b.dataset.view; render(); scrollTo({ top: 0 }); break;
+    case "new-quote": state = freshState(); view = "wizard"; render(); scrollTo({ top: 0 }); toast("Neues Angebot angelegt."); break;
+    case "sf-import": {
+      const msg = $("sf-import-msg");
+      try { const n = importFromSalesforce($("sf-import-text").value); render(); const box = $("sf-import-box"); if (box) box.open = true; $("sf-import-msg").textContent = n ? `${n} Felder übernommen.` : "Keine passenden Felder gefunden. Zuordnung unter Einstellungen → Salesforce prüfen."; }
+      catch { msg.textContent = "Das ist kein gültiges JSON. Bitte den kompletten Datensatz einfügen."; }
+      break;
+    }
+    case "save-quote":
+      try { await saveQuote(); render(); toast("Angebot gespeichert."); } catch (err) { toast(err.message); }
+      break;
+    case "sf-send": {
+      const ad = SF_ADAPTERS[catalog.salesforce.adapter] || SF_ADAPTERS.outbox;
+      try { const r = await ad.send(buildSfPayload()); render(); if (r) toast(r); } catch (err) { toast(err.message || "Übergabe fehlgeschlagen."); }
+      break;
+    }
+    case "copy-json": { const r = await copyJson(buildSfPayload()); toast(r); break; }
+    case "download-json": downloadJson(buildSfPayload()); break;
+    case "open-quote": {
+      const q = quotes.find(x => x.id === b.dataset.id); if (!q) break;
+      state = { ...freshState(), ...clone(q.state), quoteId: q.id, step: STEPS.length - 1, sfStatus: q.sfStatus || "entwurf" };
+      view = "wizard"; render(); scrollTo({ top: 0 }); break;
+    }
+    case "del-quote":
+      if (!arm(b, "del-" + b.dataset.id, "Wirklich löschen?")) break;
+      try { await deleteQuote(b.dataset.id); if (state.quoteId === b.dataset.id) state.quoteId = null; render(); toast("Angebot gelöscht."); } catch { toast("Löschen fehlgeschlagen. Fehlen die Bearbeitungsrechte?"); }
+      break;
+    case "toggle-train": {
+      const t = catalog.trainings.find(x => x.id === b.dataset.id); if (!t) break;
+      const next = !trainingIncluded(t);
+      state.trainingSel = state.trainingSel || {};
+      if (next === trainingAuto(t)) delete state.trainingSel[t.id]; else state.trainingSel[t.id] = next;
+      rerenderKeepFocus(); break;
+    }
+    case "toggle-manual": state.manual = state.manual || { on: false, value: 0 }; state.manual.on = !state.manual.on; rerenderKeepFocus(); break;
+    case "clear-manual": state.manual = { on: true, value: 0 }; render(); toast("Sonderrabatt entfernt."); break;
+    case "toggle-tpkg": {
+      const t = draft.trainings[+b.dataset.i], set = new Set(t.pkgs || []);
+      if (set.has(b.dataset.pkg)) set.delete(b.dataset.pkg); else set.add(b.dataset.pkg);
+      t.pkgs = [...set]; settingsDirty = true; rerenderKeepFocus(); break;
+    }
+    case "add-training":
+      draft.trainings.push({ id: "t" + Date.now().toString(36), name: "Neue Schulung", price: 0, pkgs: [], module: "", sku: "" });
+      settingsDirty = true; render(); break;
+    case "tab": settingsTab = b.dataset.tab; render(); break;
+    case "add-module":
+      draft.modules.push({ id: "m" + Date.now().toString(36), name: "Neues Modul", desc: "", pricing: "flat", monthly: 0, perUser: 0, unit: "Nutzer", once: 0, sku: "", discountable: true });
+      settingsDirty = true; render(); break;
+    case "add-group":
+      draft.groups.push({ id: "g" + Date.now().toString(36), name: "Neue Kondition", monthlyPct: 0, oncePct: 0, months: 0 });
+      settingsDirty = true; render(); break;
+    case "add-import":
+      draft.salesforce.importFields.push({ sf: "", key: "company" }); settingsDirty = true; render(); break;
+    case "del-row": getPath(draft, b.dataset.list).splice(+b.dataset.i, 1); settingsDirty = true; render(); break;
+    case "reset-settings":
+      if (!arm(b, "reset", "Wirklich zurücksetzen?")) break;
+      draft = clone(DEFAULT_CATALOG); settingsDirty = true; render(); toast("Beispielwerte geladen. Zum Übernehmen speichern."); break;
+    case "export-catalog": {
+      const data = clone(draft); data.example = false;
+      try { await saveFile("preise.json", JSON.stringify(data, null, 2) + "\n"); toast("preise.json gesichert. Jetzt im GitHub-Repository hochladen."); }
+      catch (e) { if (e && e.code !== "declined") toast("Die Datei konnte nicht gespeichert werden."); }
+      break;
+    }
+    case "use-central":
+      if (!arm(b, "central", "Eigene Preise verwerfen?")) break;
+      try { localStorage.removeItem("angebotsrechner:catalog"); } catch {}
+      localPrices = false; catalog = centralCatalog ? clone(centralCatalog) : clone(DEFAULT_CATALOG);
+      draft = clone(catalog); settingsDirty = false; render(); toast("Zentrale Preise werden verwendet."); break;
+    case "cancel-settings": draft = clone(catalog); settingsDirty = false; view = "wizard"; render(); break;
+    case "save-settings": {
+      const next = clone(draft); next.example = false;
+      try {
+        await saveCatalog(next); catalog = mergeCatalog(next); draft = clone(catalog); settingsDirty = false;
+        if (!catalog.groups.some(g => g.id === state.customer.group)) state.customer.group = "none";
+        render(); toast(caps.shared ? "Einstellungen gespeichert." : "Auf diesem Gerät gespeichert.");
+      } catch (err) { toast(err.message); }
+      break;
+    }
+  }
+});
+document.addEventListener("input", e => {
+  const t = e.target;
+  if (t.dataset.bind) { setPath(state, t.dataset.bind, t.type === "number" ? Math.max(0, num(t.value)) : readVal(t)); updateLive(); }
+  else if (t.dataset.cbind) { setPath(draft, t.dataset.cbind, readVal(t)); settingsDirty = true; const s = $("settings-status"); if (s) s.textContent = "Ungespeicherte Änderungen"; }
+});
+document.addEventListener("change", async e => {
+  const t = e.target;
+  if (t.dataset.bind && t.type === "number") softRerender();
+  if (t.dataset.cbind && t.tagName === "SELECT") softRerender();
+  if (t.dataset.qstatus) {
+    try { await setQuoteStatus(t.dataset.qstatus, t.value); if (state.quoteId === t.dataset.qstatus) state.sfStatus = t.value; toast("Status geändert."); }
+    catch { toast("Status konnte nicht geändert werden."); render(); }
+  }
+});
+
+/* ============================================================
+   Start
+   ============================================================ */
+// Offline-Speicher (wie bei der Unterschriftenmappe): App läuft nach dem ersten Start auch ohne Netz
+function registerOffline() {
+  if (!("serviceWorker" in navigator) || !(location.protocol === "https:" || location.hostname === "localhost")) return;
+  let hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register("sw.js").catch(e => console.warn("Offline-Speicher", e));
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadController) { hadController = true; return; }
+    toast("Eine neue Version ist da.", { label: "Neu laden", fn: () => location.reload() });
+  });
+}
+(async function init() {
+  const lc = lsGet("catalog"); if (lc) { catalog = mergeCatalog(lc); localPrices = true; }
+  quotes = listFromObj(lsGet("quotes", {}));
+  render();
+  registerOffline();
+  centralCatalog = await loadCentral();
+  if (centralCatalog && !localPrices) {
+    catalog = clone(centralCatalog);
+    if (view === "settings" && !settingsDirty) draft = clone(catalog);
+    rerenderKeepFocus();
+  }
+  if (!window.claude || !window.claude.use) return;
+  const [db, user, dl] = await Promise.all(["db", "user", "downloads"].map(n => window.claude.use(n).catch(() => null)));
+  caps.downloads = dl; caps.user = user;
+  if (!db) { render(); return; }
+  caps.db = db; caps.shared = true; quotes = [];
+  if (user) { try { caps.canEditSettings = await user.canEdit(); } catch { caps.canEditSettings = true; } }
+  db.doc("settings/catalog").onSnapshot(s => {
+    catalog = s.exists && s.data().catalog ? mergeCatalog(s.data().catalog) : clone(DEFAULT_CATALOG);
+    if (view === "settings" && settingsDirty) renderTop(); else { if (view === "settings") draft = clone(catalog); rerenderKeepFocus(); }
+  }, () => toast("Einstellungen konnten nicht geladen werden. Es gelten die zuletzt geladenen Preise."));
+  db.collection("quotes").orderBy("updatedAt", "desc").limit(300).onSnapshot(s => {
+    quotes = s.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (view === "quotes") render(); else renderTop();
+  }, () => toast("Gespeicherte Angebote konnten nicht geladen werden."));
+  render();
+})();
+</script>
+</body>
+</html>
