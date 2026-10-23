@@ -599,6 +599,12 @@ function discountText(g) {
   if (num(g.oncePct)) parts.push(`−${fmtH(num(g.oncePct))} % einmalig`);
   return parts.length ? parts.join(" · ") : "Listenpreise";
 }
+// Ersparnis über die volle Grundlaufzeit: Konditionsrabatt nur für seine Dauer, Sonderrabatt die ganze Laufzeit
+function savingsTerm() { return int(catalog.termMonths) || 24; }
+function savings(c) {
+  const term = savingsTerm(), gm = c.months ? Math.min(c.months, term) : term;
+  return r2(c.oDisc + c.oManual + c.mDisc * gm + c.mManual * term);
+}
 function validUntil() { const d = state.createdAt ? new Date(state.createdAt) : new Date(); d.setDate(d.getDate() + int(catalog.validDays)); return d; }
 
 /* ============================================================
@@ -1065,7 +1071,7 @@ function vSummary() {
   </div>
 
   <div class="facts">
-    ${c.mDisc || c.oDisc || c.mManual || c.oManual ? `<div class="fact"><span class="small muted">${c.months ? `Ersparnis über ${c.months} Monate` : "Ersparnis pro Jahr"}</span><span class="money">${eur(r2(c.oDisc + c.oManual + (c.mDisc + c.mManual) * (c.months || 12)))}</span></div>` : ""}
+    ${c.mDisc || c.oDisc || c.mManual || c.oManual ? `<div class="fact"><span class="small muted">Ersparnis über die Laufzeit (${savingsTerm()} Monate)</span><span class="money">${eur(savings(c))}</span></div>` : ""}
   </div>
   <p class="small"><span class="muted">Hinweis:</span> Alle Preise zzgl. gesetzlicher MwSt. Für Termine vor Ort wird die Anfahrt mit ${eur(catalog.training.travel)} pro gefahrenem Kilometer berechnet.</p>
   ${state.note ? `<p class="small"><span class="muted">Bemerkung:</span> ${esc(state.note)}</p>` : ""}
