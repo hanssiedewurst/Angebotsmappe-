@@ -1,7 +1,7 @@
 /* Offline-Speicher der Angebotsmappe.
    Bei jeder Änderung an den App-Dateien VERSION hochzählen (v1 -> v2 ...),
    damit die Geräte die neue Fassung abholen. Die echten Preise kommen aus der Preisdatei (siehe README). */
-const VERSION = 'v3';
+const VERSION = 'v4';
 const CACHE = 'angebotsmappe-' + VERSION;
 
 const CORE = [
@@ -13,8 +13,19 @@ const CORE = [
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
   './icons/apple-touch-icon.png',
-  './icons/favicon-64.png'
+  './icons/favicon-64.png',
+  './angebot-pdf.js',
+  './lib/pdf-lib.min.js',
+  './lib/fontkit.umd.min.js',
+  './lib/pdf.min.js',
+  './lib/pdf.worker.min.js',
+  './fonts/DejaVuSans.ttf',
+  './fonts/DejaVuSans-Bold.ttf',
+  './fonts/DejaVuSans-Oblique.ttf',
+  './fonts/OpenSans-Regular.ttf',
+  './fonts/OpenSans-Bold.ttf'
 ];
+// PDF-Bibliotheken und Schriften gehören dazu, damit das Angebots-PDF auch ohne Netz entsteht.
 
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {

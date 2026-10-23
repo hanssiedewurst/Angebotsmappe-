@@ -11,6 +11,9 @@ Die Preise kommen aus einer **Preisdatei** (`preise.json`), die ihr selbst ableg
 |---|---|
 | `index.html` | die App |
 | `preise.json` | **Vorlage mit Beispielpreisen**. Die echte Preisdatei liegt nicht hier, sondern z. B. im OneDrive (siehe Abschnitt 4). |
+| `angebot-pdf.js` | erstellt das Angebots-PDF im TAIFUN-Layout aus der Vorlage |
+| `lib/` | PDF-Bibliotheken (pdf-lib, fontkit, pdf.js von Mozilla) mit ihren Lizenzen |
+| `fonts/` | Schriften der TAIFUN-Angebote (DejaVu Sans, Open Sans) mit ihren Lizenzen |
 | `sw.js` | Offline-Speicher: hält die App nach dem ersten Start auf dem Gerät bereit |
 | `manifest.webmanifest` | Name und Icon für den Home-Bildschirm |
 | `icons/` | App-Icons |
@@ -40,15 +43,17 @@ Danach läuft die App auch ohne Netz. Zum Schluss einmal die Preisdatei einricht
 
 Die App führt in sechs Schritten durch das Angebot. Rechts läuft eine Kostenübersicht mit.
 
-1. **Kunde:** Neukunde oder Bestandskunde. Bei Neukunden die Kondition wählen (Kein Partner, Kooperationspartner, Meisterschüler, Existenzgründer). Firma, Ansprechpartner, Salesforce-IDs; Kundendaten lassen sich als JSON aus Salesforce übernehmen.
+1. **Kunde:** Neukunde oder Bestandskunde. Bei Neukunden die Kondition wählen (Kein Partner, Kooperationspartner, Meisterschüler, Existenzgründer). Firma, Ansprechpartner, Anschrift, Kundennummer, Salesforce-IDs; Kundendaten lassen sich als JSON aus Salesforce übernehmen. Die **Angebotsnummer** entsteht automatisch aus Kundennummer und Datum (z. B. `1006213_A261023`) und lässt sich überschreiben.
 2. **Paket:** Paket L, Paket M oder KI-Bundle (Einzelkämpfer, Betriebe, Mittelstand) und die Anzahl der **Arbeitsplätze (AP)**. Preis = 1. AP + jeder weitere AP.
 3. **Betrieb:** Lokal oder Cloud. Die Cloud-Pauschale enthält 3 AP, jeder weitere kostet extra. Die **Einrichtung** steht immer im Angebot (Preis je nach Betriebsart).
-4. **Zusatzmodule:** Wartung, Importmanager, App und TAIFUN Personalmanager (TPM). Bei App und TPM die Anzahl wählen (Grundpreis + Anzahl × Nutzergebühr).
-5. **Schulungen:** Bis 4 AP sind Online-Schulungen als Pauschale hinterlegt und werden automatisch vorgeschlagen:
-   - Paket L: TAIFUN allgemein + Dokumentenarchiv
-   - Paket M: TAIFUN allgemein
-   - App bzw. TPM gewählt: Schulung App bzw. Schulung TPM
-   Jede Pauschale lässt sich ab- oder zuschalten. Zusätzlich gehen Schulungsstunden nach Stundensatz.
+4. **Zusatzmodule:** TAIFUN Wartung, Import-Manager, App und Personalmanager (TPM). Bei App und TPM die Anzahl aktiver Mitarbeiter wählen (Grundgebühr + Anzahl × Preis je Mitarbeiter).
+5. **Schulungen und Dienstleistungen:** werden passend zu Paket und Modulen vorgeschlagen, Online-Seminare nur bis 4 AP:
+   - immer: Ersteinrichtung nach Aufwand
+   - Paket L und KI-Bundle: Online-Seminar Ersteinweisung + openDocument
+   - Paket M: Online-Seminar Ersteinweisung
+   - KI-Bundle: Einrichtung HalloPetra
+   - App bzw. TPM gewählt: Seminar App bzw. Installation und Seminar Personalmanager
+   Jede Position lässt sich ab- oder zuschalten. Dazu kommen zusätzliche Dienstleistungen nach Stunden und die km für die Anfahrt.
 6. **Übersicht:** monatliche und einmalige Kosten getrennt, mit Rabatten und Ersparnis über die Rabattlaufzeit. Alle Preise netto zzgl. MwSt. Hinweis zur Anfahrt (€ pro km).
 
 **Rabatte**
@@ -56,6 +61,8 @@ Die App führt in sechs Schritten durch das Angebot. Rechts läuft eine Kostenü
 - Sonderkonditionen: auf der Übersicht über das kleine **%** neben „An Salesforce übergeben“. Ein Prozentsatz, der zur Kondition dazukommt (20 % + 30 % = 50 %) und für dieselben Positionen gilt.
 
 **Speichern:** **Angebot speichern** legt das Angebot auf diesem Gerät ab (Liste unter **Gespeichert**).
+
+**Angebots-PDF:** **Angebots-PDF erstellen** auf der Übersicht erzeugt das Angebot im TAIFUN-Layout (siehe Abschnitt 5). Am PC fragt die App, wo das PDF hin soll, z. B. in den OneDrive-Ordner *Angebote*. Von dort öffnet es die Unterschriftenmappe zum Unterschreiben. Auf dem iPad: **Sichern oder teilen** → **In Dateien sichern**.
 
 ---
 
@@ -85,17 +92,38 @@ Alle Preise, Konditionen, Module und Schulungen stehen in einer Datei `preise.js
 
 ---
 
-## 5. Salesforce
+## 5. Angebots-PDF im TAIFUN-Layout
+
+Die App baut das PDF aus einem echten TAIFUN-Aboangebot als **Vorlage**. Briefpapier, Vertragstexte, Konditionen und Anlagen kommen aus der Vorlage. Die App setzt:
+
+- Anschrift, Angebotsnummer, Datum, Kundennummer, „garantiert bis“ und die Signatur im Anschreiben
+- Kunde, KD-Nr. und Anschrift im Abovertrag, Mandatsreferenz, Anschrift für das Lastschriftmandat, Ort und Datum bei der Unterschrift
+- die **Angebotsübersicht** mit Leistungsbestandteilen, Einmaligen Investitionen und Dienstleistungen, Rabatt je Zeile und Summen
+- die Ankreuzfelder lokal/SaaS, TAIFUN App (Auftragsverarbeitung) und die HalloPetra-Variante
+- Datum im Seitenkopf und die Seitenzahlen
+
+Der alte Text wird dabei aus dem PDF entfernt, nicht nur überdeckt. Der KI-Upgrade-Vertrag (Anlage 3) bleibt nur drin, wenn ein KI-Bundle angeboten wird. Das PDF lässt sich in der Unterschriftenmappe genauso lesen wie ein Original (Kunde, Positionen, Provision, Salesforce).
+
+**Einrichten (einmal):**
+1. Ein TAIFUN-Aboangebot **mit KI-Bundle** als PDF in den gemeinsamen OneDrive-Ordner legen (z. B. `Vorlage_Aboangebot.pdf`). Dann ist Anlage 3 enthalten.
+2. **Einstellungen** → **Angebots-PDF** → am PC **Vorlage verknüpfen…**, auf dem iPad **Vorlage öffnen…**.
+3. Darunter die eigene **Signatur** eintragen (Name, Funktion, Mobil, E-Mail). Sie gilt nur auf diesem Gerät.
+
+Die Namen der Positionen im PDF stehen in der Preisdatei und lassen sich in den Einstellungen ändern (Spalten „Name im Angebot“).
+
+---
+
+## 6. Salesforce
 
 - Auf der Übersicht **An Salesforce übergeben**: Je nach Einstellung wird das Angebot mit Status „bereit für Salesforce“ gespeichert, als JSON-Datei gesichert oder in die Zwischenablage kopiert.
 - Die Daten enthalten eine Opportunity (Feldnamen unter **Einstellungen → Salesforce** einstellbar) und Line Items mit Produktcode, Menge, Einzelpreis, Abrechnungsart (monatlich/einmalig) und ggf. Rabatt (`Discount`).
 - **Salesforce-Daten ansehen** zeigt das JSON.
 
-Eine direkte Verbindung zu Salesforce braucht einen Server (siehe Abschnitt 6).
+Eine direkte Verbindung zu Salesforce braucht einen Server (siehe Abschnitt 7).
 
 ---
 
-## 6. Später: zentraler Server
+## 7. Später: zentraler Server
 
 Die App ist so gebaut, dass sich Preise und Salesforce-Übergabe später an einen Server hängen lassen:
 - **Preise:** Statt der Preisdatei im OneDrive lädt die App die Preise von einem Server mit Anmeldung. Dann aktualisieren sich auch die iPads automatisch.
@@ -103,7 +131,7 @@ Die App ist so gebaut, dass sich Preise und Salesforce-Übergabe später an eine
 
 ---
 
-## 7. Updates einspielen
+## 8. Updates einspielen
 
 1. Die geänderten Dateien im Repository hochladen (**Add file** → **Upload files**).
 2. Bei Änderungen an `index.html` in `sw.js` die Zeile `const VERSION = 'v…';` hochzählen. Ohne diesen Schritt behalten die Geräte die alte Fassung im Offline-Speicher.
@@ -111,9 +139,9 @@ Die App ist so gebaut, dass sich Preise und Salesforce-Übergabe später an eine
 
 ---
 
-## 8. Datenschutz
+## 9. Datenschutz
 
 - **Angebote und Kundendaten** bleiben im Browser des Geräts. Es gibt keinen Server der App, der sie empfängt.
-- **Preise** liegen in eurer Preisdatei (OneDrive) und auf den Geräten, nicht bei GitHub.
+- **Preise und die TAIFUN-Vorlage** liegen in eurem OneDrive und auf den Geräten, nicht bei GitHub.
 - **GitHub** liefert nur die App-Dateien aus.
-- **Keine externen Anbieter:** Schriften kommen vom Gerät selbst, es werden keine Dateien von Google oder anderen Diensten nachgeladen.
+- **Keine externen Anbieter:** Die App-Schriften kommen vom Gerät, PDF-Bibliotheken und PDF-Schriften liegen in diesem Repository (`lib/`, `fonts/`). Es werden keine Dateien von Google oder anderen Diensten nachgeladen. Das PDF entsteht komplett im Browser.

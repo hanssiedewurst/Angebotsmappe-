@@ -300,7 +300,9 @@ code { font-family: var(--f-num); font-size: 0.9em; }
 </div>
 <div id="toast" role="status" hidden></div>
 <input type="file" id="price-input" accept="application/json,.json" hidden>
+<input type="file" id="tpl-input" accept="application/pdf,.pdf" hidden>
 
+<script src="angebot-pdf.js"></script>
 <script>
 /* ============================================================
    Katalog: alle Preise, Module und Salesforce-Zuordnungen.
@@ -309,16 +311,17 @@ code { font-family: var(--f-num); font-size: 0.9em; }
 const DEFAULT_CATALOG = {
   example: true,
   vat: 19,
-  validDays: 30,
+  validDays: 28,
+  termMonths: 24,
   packages: [
-    { id: "L", name: "Paket L", desc: "Voller Funktionsumfang für wachsende Betriebe", monthly: 189, perExtra: 49, sku: "PKG-L" },
-    { id: "M", name: "Paket M", desc: "Kernfunktionen für den Betriebsalltag", monthly: 129, perExtra: 39, sku: "PKG-M" },
-    { id: "KI", name: "KI-Bundle", desc: "Software plus KI-Assistenz, in drei Größen", variants: true }
+    { id: "L", name: "Paket L", desc: "Voller Funktionsumfang für wachsende Betriebe", monthly: 129, perExtra: 49, sku: "PKG-L", pdfName: "Paket L", extraName: "Zusätzliche Arbeitsplatzlizenzen L" },
+    { id: "M", name: "Paket M", desc: "Kernfunktionen für den Betriebsalltag", monthly: 89, perExtra: 39, sku: "PKG-M", pdfName: "Paket M", extraName: "Zusätzliche Arbeitsplatzlizenzen M" },
+    { id: "KI", name: "KI-Bundle", desc: "Paket L mit KI-Assistenz HalloPetra, in drei Größen", variants: true }
   ],
   kiVariants: [
-    { id: "einzel", name: "Einzelkämpfer", desc: "Für Solo-Selbstständige", monthly: 89, perExtra: 29, sku: "KI-EINZEL" },
-    { id: "betriebe", name: "Betriebe", desc: "Für Teams bis ca. 10 Personen", monthly: 169, perExtra: 45, sku: "KI-BETRIEB" },
-    { id: "mittelstand", name: "Mittelstand", desc: "Für mehrere Abteilungen", monthly: 319, perExtra: 59, sku: "KI-MITTEL" }
+    { id: "einzel", name: "Einzelkämpfer", desc: "Für Solo-Selbstständige", monthly: 229, perExtra: 49, sku: "KI-EINZEL", pdfName: "Paket L & KI-Bundle", extraName: "Zusätzliche Arbeitsplatzlizenzen L", hpName: "HalloPetra Einzelkämpfer" },
+    { id: "betriebe", name: "Betriebe", desc: "Für Teams bis ca. 10 Personen", monthly: 329, perExtra: 49, sku: "KI-BETRIEB", pdfName: "Paket L & KI-Bundle", extraName: "Zusätzliche Arbeitsplatzlizenzen L", hpName: "HalloPetra Betriebe" },
+    { id: "mittelstand", name: "Mittelstand", desc: "Für mehrere Abteilungen", monthly: 629, perExtra: 49, sku: "KI-MITTEL", pdfName: "Paket L & KI-Bundle", extraName: "Zusätzliche Arbeitsplatzlizenzen L", hpName: "HalloPetra Mittelstand" }
   ],
   groups: [
     { id: "none", name: "Kein Partner", monthlyPct: 0, oncePct: 0, months: 0 },
@@ -326,20 +329,29 @@ const DEFAULT_CATALOG = {
     { id: "meister", name: "Meisterschüler", monthlyPct: 30, oncePct: 0, months: 12 },
     { id: "gruender", name: "Existenzgründer", monthlyPct: 20, oncePct: 0, months: 24 }
   ],
+  // Namen wie im TAIFUN-Angebot: pdfName (Pauschal), baseName/userName (Grundgebühr/je Einheit), onceName (einmalig)
   modules: [
-    { id: "wartung", name: "Wartung", desc: "Updates, Support und Fernwartung", pricing: "flat", monthly: 39, perUser: 0, unit: "Nutzer", once: 0, sku: "MOD-WARTUNG", discountable: true },
-    { id: "import", name: "Importmanager", desc: "Datenübernahme aus Fremdsystemen", pricing: "flat", monthly: 25, perUser: 0, unit: "Nutzer", once: 0, sku: "MOD-IMPORT", discountable: true },
-    { id: "app", name: "App", desc: "Mobile App für Monteure und Außendienst", pricing: "perUser", monthly: 19, perUser: 7, unit: "Nutzer", once: 149, sku: "MOD-APP", discountable: false },
-    { id: "tpm", name: "TAIFUN Personalmanager (TPM)", desc: "Personalverwaltung", pricing: "perUser", monthly: 29, perUser: 5, unit: "Nutzer", once: 0, sku: "MOD-TPM", discountable: false }
+    { id: "wartung", name: "TAIFUN Wartung", desc: "Updates, Support und Fernwartung", pricing: "flat", monthly: 39, perUser: 0, unit: "Nutzer", once: 0, sku: "MOD-WARTUNG", discountable: true },
+    { id: "import", name: "TAIFUN Import-Manager", desc: "Datenübernahme aus Fremdsystemen", pricing: "flat", monthly: 9, perUser: 0, unit: "Nutzer", once: 0, sku: "MOD-IMPORT", discountable: true },
+    { id: "app", name: "TAIFUN App", desc: "Mobile App für Monteure und Außendienst", pricing: "perUser", monthly: 19, perUser: 19, unit: "aktive Mitarbeiter", once: 290, sku: "MOD-APP", discountable: false,
+      baseName: "TAIFUN App Grundgebühr", userName: "TAIFUN App aktive Mitarbeiter", onceName: "TAIFUN App Basis, einmalige Bereitstellungsgebühr" },
+    { id: "tpm", name: "TAIFUN Personalmanager (TPM)", desc: "Personalverwaltung", pricing: "perUser", monthly: 49, perUser: 7, unit: "aktive Mitarbeiter", once: 0, sku: "MOD-TPM", discountable: false,
+      baseName: "TAIFUN PersonalManager Grundgebühr", userName: "TAIFUN PersonalManager aktive Mitarbeiter", onceName: "" }
   ],
-  cloud: { monthly: 99, included: 3, perExtra: 25, once: 250, sku: "BETR-CLOUD", extraSku: "BETR-CLOUD-AP" },
-  local: { once: 390, sku: "BETR-LOKAL" },
-  training: { rate: 95, travel: 1.5, flatMaxUsers: 4, discountable: false, sku: "SCHULUNG" },
+  cloud: { monthly: 129, included: 3, perExtra: 25, once: 190, sku: "BETR-CLOUD", extraSku: "BETR-CLOUD-AP",
+    pdfName: "Cloud Dienst inkl. drei Cloud Nutzer Lizenzen", extraName: "Zusätzliche Cloud Nutzer Lizenz", setupName: "Online Installationspaket" },
+  local: { once: 190, sku: "BETR-LOKAL", setupName: "Online Installationspaket" },
+  training: { rate: 139, rateName: "Zusätzliche Dienstleistungen", travel: 1.5, travelName: "km inkl. der benötigten Anfahr- u. Abfahrzeit", km: 100,
+    flatMaxUsers: 4, discountable: false, sku: "DL-STD", travelSku: "DL-KM" },
+  // Dienstleistungen in der Reihenfolge des TAIFUN-Angebots. seminar: nur bis flatMaxUsers AP automatisch, aufwand: ohne Gesamtpreis
   trainings: [
-    { id: "allgemein", name: "Online-Schulung TAIFUN allgemein", price: 390, pkgs: ["L", "M"], module: "", sku: "SCH-ALLG" },
-    { id: "doku", name: "Online-Schulung Dokumentenarchiv", price: 190, pkgs: ["L"], module: "", sku: "SCH-DOKU" },
-    { id: "app", name: "Online-Schulung App", price: 149, pkgs: [], module: "app", sku: "SCH-APP" },
-    { id: "tpm", name: "Online-Schulung TPM", price: 149, pkgs: [], module: "tpm", sku: "SCH-TPM" }
+    { id: "ersteinrichtung", name: "Ersteinrichtung nach Aufwand", price: 139, pkgs: ["L", "M", "KI"], module: "", sku: "DL-ERST", aufwand: true },
+    { id: "allgemein", name: "Online-Seminar Ersteinweisung für Neukunden*", price: 110, pkgs: ["L", "M", "KI"], module: "", sku: "SEM-ALLG", seminar: true },
+    { id: "tpm-inst", name: "Online Installation TAIFUN Personalmanager", price: 140, pkgs: [], module: "tpm", sku: "DL-PM" },
+    { id: "hp", name: "Erstinstallation und Einrichtung HalloPetra Verknüpfung mit TAIFUN+", price: 60, pkgs: ["KI"], module: "", sku: "DL-HP" },
+    { id: "app", name: "Online Seminar TAIFUN App*", price: 50, pkgs: [], module: "app", sku: "SEM-APP", seminar: true },
+    { id: "doku", name: "Online Seminar TAIFUN openDocument*", price: 50, pkgs: ["L", "KI"], module: "", sku: "SEM-DOKU", seminar: true },
+    { id: "tpm", name: "Online-Seminar TAIFUN Personalmanager*", price: 140, pkgs: [], module: "tpm", sku: "SEM-PM", seminar: true }
   ],
   salesforce: {
     adapter: "outbox",
@@ -418,9 +430,11 @@ function readVal(t) {
 }
 function lsGet(k, fallback = null) { try { const v = localStorage.getItem("angebotsrechner:" + k); return v ? JSON.parse(v) : fallback; } catch { return fallback; } }
 function lsSet(k, v) { try { localStorage.setItem("angebotsrechner:" + k, JSON.stringify(v)); return true; } catch { return false; } }
-function newQuoteNo() {
-  const d = new Date(), p = n => String(n).padStart(2, "0");
-  return `ANG-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+// Angebotsnummer wie bei TAIFUN: Kundennummer, dann „_“ und eine eigene Kennung (A + Datum)
+function offerNo(s = state) {
+  if (s.offerNo) return s.offerNo;
+  const d = s.createdAt ? new Date(s.createdAt) : new Date(), p = n => String(n).padStart(2, "0");
+  return `${s.customer.customerNo || "0000000"}_A${String(d.getFullYear()).slice(2)}${p(d.getMonth() + 1)}${p(d.getDate())}`;
 }
 function mergeCatalog(stored) {
   const out = clone(DEFAULT_CATALOG);
@@ -449,12 +463,12 @@ const caps = { db: null, user: null, downloads: null, canEditSettings: true, sha
 function freshState() {
   // Beispielauswahl, damit der Rechner sofort etwas zeigt
   return {
-    step: 0, quoteId: null, quoteNo: newQuoteNo(), createdAt: null, sfStatus: "entwurf",
-    customer: { type: "neu", group: "gruender", company: "", contact: "", email: "", customerNo: "", sfAccountId: "", sfOpportunityId: "" },
+    step: 0, quoteId: null, offerNo: "", createdAt: null, sfStatus: "entwurf",
+    customer: { type: "neu", group: "gruender", company: "", contact: "", street: "", zip: "", city: "", email: "", customerNo: "", sfAccountId: "", sfOpportunityId: "" },
     pkg: { id: "M", ki: "betriebe" },
     hosting: { mode: "cloud", seats: 4 },
     modules: { wartung: { on: true, qty: 1 }, app: { on: true, qty: 3 } },
-    training: { hours: 0 },
+    training: { hours: 0, km: null },
     trainingSel: {},              // manuelle Abweichung je Schulungspauschale (true/false)
     manual: { on: false, value: 0 }, // Sonderrabatt in % auf Paket und rabattfähige Module
     note: ""
@@ -462,6 +476,7 @@ function freshState() {
 }
 function ensureModuleState() {
   for (const m of catalog.modules) if (!state.modules[m.id]) state.modules[m.id] = { on: false, qty: 1 };
+  if (state.training.km == null) state.training.km = int(catalog.training.km);
 }
 
 /* ============================================================
@@ -469,83 +484,106 @@ function ensureModuleState() {
    ============================================================ */
 function calc(s = state, cat = catalog) {
   const lines = [];
+  // Eine Zeile im TAIFUN-Angebot. sec: monthly | onetime | service
+  const R = (sec, name, qty, unit, o = {}) => ({ sec, name, qty, unit: unit == null ? null : num(unit), code: o.code || "", disc: !!o.disc,
+    ep: !!o.ep, aufwand: !!o.aufwand, unitName: o.unitName || "" });
+  const seats = Math.max(1, int(s.hosting.seats)), extraAp = seats - 1, cloud = s.hosting.mode === "cloud";
+  // Paket: 1. Arbeitsplatz plus Preis je weiterem Arbeitsplatz
   const pkg = cat.packages.find(p => p.id === s.pkg.id) || cat.packages[0];
-  // Paketpreis: 1. Arbeitsplatz plus Preis je weiterem Arbeitsplatz
-  const seats = Math.max(1, int(s.hosting.seats)), extraAp = seats - 1;
   const pv = pkg.variants ? (cat.kiVariants.find(x => x.id === s.pkg.ki) || cat.kiVariants[0]) : pkg;
   const pLabel = pkg.variants ? `${pkg.name} ${pv.name}` : pkg.name;
-  lines.push({ id: "pkg", group: "Paket", label: pLabel, detail: extraAp ? `1. AP ${eur(pv.monthly)} + ${extraAp} weitere AP × ${eur(pv.perExtra)}` : `1 AP · ${pv.desc}`,
-    monthly: num(pv.monthly) + extraAp * num(pv.perExtra), once: 0, disc: true, qty: seats,
-    sf: [{ code: pv.sku, desc: `${pLabel} (1. AP)`, qty: 1, unit: num(pv.monthly), bill: "monatlich" }, { code: pv.sku + "-AP", desc: `${pLabel} weiterer AP`, qty: extraAp, unit: num(pv.perExtra), bill: "monatlich" }] });
+  const pr = [R("monthly", pv.pdfName || pLabel, 1, pv.monthly, { code: pv.sku, disc: true })];
+  if (extraAp) pr.push(R("monthly", pv.extraName || "Zusätzliche Arbeitsplatzlizenzen", extraAp, pv.perExtra, { code: pv.sku + "-AP", disc: true }));
+  if (pkg.variants && pv.hpName) pr.push(R("monthly", pv.hpName, 1, null));
+  lines.push({ id: "pkg", group: "Paket", label: pLabel, detail: extraAp ? `1. AP ${eur(pv.monthly)} + ${extraAp} weitere AP × ${eur(pv.perExtra)}` : `1 AP · ${pv.desc}`, qty: seats, rows: pr });
 
-  if (s.hosting.mode === "cloud") {
+  if (cloud) {
     const cl = cat.cloud, inc = int(cl.included), extra = Math.max(0, seats - inc);
-    lines.push({ id: "cloud", group: "Betrieb", label: "Cloud-Betrieb", detail: `Pauschale inkl. ${inc} Arbeitsplätze`, monthly: num(cl.monthly), once: 0, disc: true,
-      sf: [{ code: cl.sku, desc: `Cloud-Betrieb inkl. ${inc} Arbeitsplätze`, qty: 1, unit: num(cl.monthly), bill: "monatlich" }] });
-    if (extra > 0) lines.push({ id: "cloud-extra", group: "Betrieb", label: "Weitere Arbeitsplätze (Cloud)", detail: `${extra} × ${eur(cl.perExtra)}`, monthly: extra * num(cl.perExtra), once: 0, disc: true,
-      sf: [{ code: cl.extraSku, desc: "Weiterer Arbeitsplatz Cloud", qty: extra, unit: num(cl.perExtra), bill: "monatlich" }] });
+    lines.push({ id: "cloud", group: "Betrieb", label: "Cloud-Betrieb", detail: `Pauschale inkl. ${inc} Arbeitsplätze`,
+      rows: [R("monthly", cl.pdfName || "Cloud-Betrieb", 1, cl.monthly, { code: cl.sku, disc: true })] });
+    if (extra > 0) lines.push({ id: "cloud-extra", group: "Betrieb", label: "Weitere Arbeitsplätze (Cloud)", detail: `${extra} × ${eur(cl.perExtra)}`,
+      rows: [R("monthly", cl.extraName || "Weitere Arbeitsplätze (Cloud)", extra, cl.perExtra, { code: cl.extraSku, disc: true })] });
   }
-  // Einrichtung ist immer Teil des Angebots, Preis je nach Betriebsart
-  const cloud = s.hosting.mode === "cloud", setupOnce = num(cloud ? cat.cloud.once : cat.local.once);
-  lines.push({ id: "setup", group: "Einrichtung", label: `Einrichtung ${cloud ? "Cloud" : "lokal"}`, detail: cloud ? "Einrichtung der Cloud-Umgebung" : "Installation auf dem Kundenserver", monthly: 0, once: setupOnce, disc: true,
-    sf: [{ code: cloud ? cat.cloud.sku + "-SETUP" : cat.local.sku, desc: `Einrichtung ${cloud ? "Cloud" : "lokal"}`, qty: 1, unit: setupOnce, bill: "einmalig" }] });
+  // Einrichtung ist immer Teil des Angebots (Dienstleistung), Preis je nach Betriebsart
+  const so = cloud ? cat.cloud : cat.local;
+  lines.push({ id: "setup", group: "Einrichtung", label: so.setupName || `Einrichtung ${cloud ? "Cloud" : "lokal"}`, detail: cloud ? "Einrichtung Cloud" : "Einrichtung lokal",
+    rows: [R("service", so.setupName || "Einrichtung", 1, so.once, { code: cloud ? cat.cloud.sku + "-SETUP" : cat.local.sku, disc: true, unitName: "Stk" })] });
 
   for (const m of cat.modules) {
     const sel = s.modules[m.id];
     if (!sel || !sel.on) continue;
+    const disc = m.discountable !== false, rows = [];
     if (m.pricing === "perUser") {
       const q = int(sel.qty);
-      lines.push({ id: "mod-" + m.id, group: "Zusatzmodule", label: m.name, detail: `Grundpreis ${eur(m.monthly)} + ${q} ${m.unit} × ${eur(m.perUser)}`,
-        monthly: num(m.monthly) + q * num(m.perUser), once: num(m.once), disc: m.discountable !== false, qty: q,
-        sf: [{ code: m.sku, desc: `${m.name} Grundpreis`, qty: 1, unit: num(m.monthly), bill: "monatlich" }, { code: m.sku + "-USER", desc: `${m.name} je ${m.unit}`, qty: q, unit: num(m.perUser), bill: "monatlich" }, { code: m.sku + "-SETUP", desc: `Einrichtung ${m.name}`, qty: 1, unit: num(m.once), bill: "einmalig" }] });
+      rows.push(R("monthly", m.baseName || `${m.name} Grundgebühr`, 1, m.monthly, { code: m.sku, disc }));
+      if (q) rows.push(R("monthly", m.userName || `${m.name} ${m.unit}`, q, m.perUser, { code: m.sku + "-USER", disc }));
+      lines.push({ id: "mod-" + m.id, group: "Zusatzmodule", label: m.name, detail: `Grundpreis ${eur(m.monthly)} + ${q} ${m.unit} × ${eur(m.perUser)}`, qty: q, rows });
     } else {
-      lines.push({ id: "mod-" + m.id, group: "Zusatzmodule", label: m.name, detail: m.desc, monthly: num(m.monthly), once: num(m.once), disc: m.discountable !== false,
-        sf: [{ code: m.sku, desc: m.name, qty: 1, unit: num(m.monthly), bill: "monatlich" }, { code: m.sku + "-SETUP", desc: `Einrichtung ${m.name}`, qty: 1, unit: num(m.once), bill: "einmalig" }] });
+      rows.push(R("monthly", m.pdfName || m.name, 1, m.monthly, { code: m.sku, disc }));
+      lines.push({ id: "mod-" + m.id, group: "Zusatzmodule", label: m.name, detail: m.desc, rows });
     }
+    if (num(m.once)) rows.push(R("onetime", m.onceName || `${m.name}, einmalige Bereitstellungsgebühr`, 1, m.once, { code: m.sku + "-SETUP", disc }));
   }
 
   const tr = cat.training, hours = Math.max(0, num(s.training.hours));
   for (const t of cat.trainings || []) {
     if (!trainingIncluded(t, s, cat)) continue;
-    lines.push({ id: "train-" + t.id, group: "Schulung", label: t.name, detail: "Online-Pauschale", monthly: 0, once: num(t.price), disc: !!tr.discountable, manual: true,
-      sf: [{ code: t.sku, desc: t.name, qty: 1, unit: num(t.price), bill: "einmalig" }] });
+    lines.push({ id: "train-" + t.id, group: "Schulung", label: t.name.replace(/\*\s*$/, ""), detail: t.aufwand ? `nach Aufwand, ${eur(t.price)} je Std` : "Pauschale", aufwand: !!t.aufwand,
+      rows: [R("service", t.name, 1, t.price, { code: t.sku, aufwand: t.aufwand, disc: !!tr.discountable, unitName: "Stk" })] });
   }
-  if (hours > 0) {
-    lines.push({ id: "training", group: "Schulung", label: "Schulung nach Stunden", detail: `${fmtH(hours)} Std × ${eur(tr.rate)}`, monthly: 0, once: hours * num(tr.rate), disc: !!tr.discountable,
-      sf: [{ code: tr.sku, desc: "Schulung (Std)", qty: hours, unit: num(tr.rate), bill: "einmalig" }] });
-  }
+  if (hours > 0) lines.push({ id: "training", group: "Schulung", label: tr.rateName || "Dienstleistung nach Stunden", detail: `${fmtH(hours)} Std × ${eur(tr.rate)}`,
+    rows: [R("service", tr.rateName || "Zusätzliche Dienstleistungen", hours, tr.rate, { code: tr.sku, disc: !!tr.discountable, unitName: "Std" })] });
+  // Anfahrt: im Angebot als Einzelpreis („EP“), nicht in der Summe
+  const km = s.training.km == null || s.training.km === "" ? int(tr.km) : int(s.training.km);
+  const kmRow = km ? R("onetime", tr.travelName || "km Anfahrt", km, tr.travel, { code: tr.travelSku, ep: true }) : null;
 
+  // Rabatte je Zeile: Kondition (Neukunden) plus Sonderrabatt, zusammen höchstens 100 %
   const group = s.customer.type === "neu" ? cat.groups.find(g => g.id === s.customer.group) : null;
   const mPct = group ? num(group.monthlyPct) : 0, oPct = group ? num(group.oncePct) : 0;
   const months = group && mPct ? int(group.months) : 0;
-  // Sonderrabatt: ein Prozentsatz auf Paket, Cloud und rabattfähige Module – dieselbe Basis wie der
-  // monatliche Konditionsrabatt – und wird zu diesem addiert (20 % + 30 % = 50 %)
   const special = Math.max(0, num(s.manual && s.manual.value));
+  const allRows = [];
   for (const l of lines) {
-    l.manual = l.disc && l.monthly > 0;
-    const cap = 100 - (l.disc ? (l.monthly ? mPct : oPct) : 0);
-    l.manualPct = l.manual ? Math.min(cap, special) : 0;
-    l.mMan = r2(l.monthly * l.manualPct / 100); l.oMan = r2(l.once * l.manualPct / 100);
+    l.monthly = 0; l.once = 0; l.manualPct = 0;
+    for (const r of l.rows) {
+      const gp = r.disc ? (r.sec === "monthly" ? mPct : oPct) : 0, sp = r.disc && r.sec === "monthly" ? Math.min(100 - gp, special) : 0;
+      r.gross = r.unit == null ? 0 : r2(r.qty * r.unit);
+      r.pct = gp + sp;
+      r.total = r.unit == null || r.ep || r.aufwand ? null : r2(r.gross * (1 - r.pct / 100));
+      r.groupAmt = r.total == null ? 0 : r2(r.gross * gp / 100);
+      r.specialAmt = r.total == null ? 0 : r2(r.gross - r.total - r.groupAmt);
+      if (r.total != null) { if (r.sec === "monthly") l.monthly = r2(l.monthly + r.gross); else l.once = r2(l.once + r.gross); }
+      l.manualPct = Math.max(l.manualPct, sp);
+      allRows.push(r);
+    }
+    l.disc = l.rows.some(r => r.disc);
   }
-  const sum = f => r2(lines.reduce((a, l) => a + f(l), 0));
-  const monthlySub = sum(l => l.monthly), onceSub = sum(l => l.once);
-  const mManual = sum(l => l.mMan), oManual = sum(l => l.oMan);
-  const mDisc = r2(sum(l => l.disc ? l.monthly : 0) * mPct / 100), oDisc = r2(sum(l => l.disc ? l.once : 0) * oPct / 100);
-  const monthlyNet = r2(monthlySub - mManual - mDisc), onceNet = r2(onceSub - oManual - oDisc);
+  const sum = f => r2(allRows.reduce((a, r) => a + f(r), 0));
+  const isM = r => r.sec === "monthly";
+  const monthlySub = sum(r => isM(r) && r.total != null ? r.gross : 0), onceSub = sum(r => !isM(r) && r.total != null ? r.gross : 0);
+  const mManual = sum(r => isM(r) ? r.specialAmt : 0), oManual = sum(r => isM(r) ? 0 : r.specialAmt);
+  const mDisc = sum(r => isM(r) ? r.groupAmt : 0), oDisc = sum(r => isM(r) ? 0 : r.groupAmt);
+  const monthlyNet = sum(r => isM(r) && r.total != null ? r.total : 0), onceNet = sum(r => !isM(r) && r.total != null ? r.total : 0);
   const vat = num(cat.vat) / 100;
-  const firstYear = r2(onceNet + (months ? Math.min(12, months) * monthlyNet + Math.max(0, 12 - months) * monthlySub : 12 * monthlyNet));
+  // Abschnitte für das Angebots-PDF, Reihenfolge wie bei TAIFUN (Cloud am Ende der Leistungsbestandteile)
+  const order = lines.filter(l => !/^cloud/.test(l.id)).concat(lines.filter(l => /^cloud/.test(l.id)));
+  const sections = {
+    monthly: order.flatMap(l => l.rows).filter(isM),
+    onetime: (kmRow ? [kmRow] : []).concat(lines.flatMap(l => l.rows).filter(r => r.sec === "onetime")),
+    service: lines.flatMap(l => l.rows).filter(r => r.sec === "service")
+  };
   return {
-    lines, group, mPct, oPct, months, special, monthlySub, onceSub, mManual, oManual, mDisc, oDisc, monthlyNet, onceNet,
+    lines, rows: allRows, sections, kmRow, group, mPct, oPct, months, special, monthlySub, onceSub, mManual, oManual, mDisc, oDisc, monthlyNet, onceNet,
     monthlyVat: r2(monthlyNet * vat), onceVat: r2(onceNet * vat),
     monthlyGross: r2(monthlyNet * (1 + vat)), onceGross: r2(onceNet * (1 + vat)),
-    regularMonthly: monthlySub, firstYear, pkgLabel: lines[0].label,
+    regularMonthly: monthlySub, pkgLabel: pLabel, isKi: !!pkg.variants, kiName: pkg.variants ? pv.name : null,
     noDiscM: lines.filter(l => l.monthly && !l.disc).map(l => l.label)
   };
 }
 function fmtH(h) { return String(h).replace(".", ","); }
 // Schulungspauschale automatisch vorgesehen: bis X Nutzer, passend zu Paket oder gewähltem Modul
 function trainingAuto(t, s = state, cat = catalog) {
-  if (Math.max(1, int(s.hosting.seats)) > int(cat.training.flatMaxUsers)) return false;
+  if (t.seminar && Math.max(1, int(s.hosting.seats)) > int(cat.training.flatMaxUsers)) return false;
   return (t.pkgs || []).includes(s.pkg.id) || !!(t.module && s.modules[t.module] && s.modules[t.module].on);
 }
 function trainingIncluded(t, s = state, cat = catalog) {
@@ -570,7 +608,7 @@ function validUntil() { const d = state.createdAt ? new Date(state.createdAt) : 
 function sfValues(c) {
   const cu = state.customer;
   return {
-    quoteNumber: state.quoteNo, company: cu.company, contact: cu.contact, email: cu.email, customerNo: cu.customerNo,
+    quoteNumber: offerNo(), company: cu.company, contact: cu.contact, email: cu.email, customerNo: cu.customerNo,
     customerType: cu.type === "neu" ? "Neukunde" : "Bestandskunde",
     group: c.group ? c.group.name : "",
     package: c.pkgLabel,
@@ -579,6 +617,7 @@ function sfValues(c) {
     trainings: c.lines.filter(l => l.id.startsWith("train-")).map(l => l.label).join("; "),
     modules: c.lines.filter(l => l.group === "Zusatzmodule").map(l => l.qty ? `${l.label} (${l.qty})` : l.label).join("; "),
     trainingHours: Math.max(0, num(state.training.hours)),
+    street: cu.street, zip: cu.zip, city: cu.city,
     monthlyNet: c.monthlyNet, onceNet: c.onceNet, discountMonths: c.months,
     validUntil: isoDate(validUntil()), note: state.note
   };
@@ -589,20 +628,20 @@ function buildSfPayload(c = calc()) {
   const opp = {};
   if (state.customer.sfOpportunityId) opp.Id = state.customer.sfOpportunityId;
   if (state.customer.sfAccountId) opp.AccountId = state.customer.sfAccountId;
-  opp.Name = String(sf.nameTemplate || "{company}").replace(/\{(\w+)\}/g, (_, k) => vals[k] ?? "").trim() || state.quoteNo;
+  opp.Name = String(sf.nameTemplate || "{company}").replace(/\{(\w+)\}/g, (_, k) => vals[k] ?? "").trim() || offerNo();
   opp.StageName = sf.stage;
   opp.CloseDate = isoDate(close);
   for (const f of sf.exportFields) if (f.on && f.sf) opp[f.sf] = vals[f.key];
   const items = [];
-  for (const l of c.lines) for (const it of l.sf) {
-    if (!num(it.unit) || !it.qty) continue;
-    const row = { ProductCode: it.code, Description: it.desc, Quantity: it.qty, UnitPrice: it.unit };
-    if (l.manualPct) row.Discount = l.manualPct;
-    if (sf.billingField) row[sf.billingField] = it.bill;
+  for (const r of c.rows) {
+    if (r.total == null || !r.unit || !r.qty) continue;
+    const row = { ProductCode: r.code, Description: r.name, Quantity: r.qty, UnitPrice: r.unit };
+    if (r.pct) row.Discount = r.pct;
+    if (sf.billingField) row[sf.billingField] = r.sec === "monthly" ? "monatlich" : "einmalig";
     items.push(row);
   }
   return {
-    source: "Angebotsrechner", quoteNumber: state.quoteNo, createdAt: new Date().toISOString(),
+    source: "Angebotsrechner", quoteNumber: offerNo(), createdAt: new Date().toISOString(),
     discount: c.group ? { group: c.group.name, monthlyPct: c.mPct, oncePct: c.oPct, months: c.months, monthlyAmount: c.mDisc, onceAmount: c.oDisc } : null,
     totals: { specialMonthly: c.mManual, specialOnce: c.oManual, monthlyNet: c.monthlyNet, onceNet: c.onceNet, monthlyGross: c.monthlyGross, onceGross: c.onceGross, vatPct: num(catalog.vat) },
     Opportunity: opp,
@@ -651,7 +690,7 @@ async function saveQuote(sfStatus) {
   const id = state.quoteId || "q-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
   const snap = clone(state); delete snap.step;
   const doc = {
-    number: state.quoteNo, company: state.customer.company || "", customerType: state.customer.type,
+    number: offerNo(), company: state.customer.company || "", customerType: state.customer.type,
     packageLabel: c.pkgLabel, hosting: state.hosting.mode, monthlyNet: c.monthlyNet, onceNet: c.onceNet,
     createdAt: state.createdAt, updatedAt: now, sfStatus: state.sfStatus, state: snap, sfPayload: buildSfPayload(c)
   };
@@ -872,8 +911,12 @@ function vKunde() {
   <fieldset><legend>Kundendaten</legend><div class="form-grid">
     ${field("cu-company", "customer.company", "Firma", { ph: "z. B. Holzbau Brandt GmbH" })}
     ${field("cu-contact", "customer.contact", "Ansprechpartner", { ph: "Vor- und Nachname" })}
+    ${field("cu-street", "customer.street", "Straße und Hausnummer", { ph: "z. B. Am Sägewerk 7" })}
+    ${field("cu-zip", "customer.zip", "PLZ", { ph: "z. B. 30449" })}
+    ${field("cu-city", "customer.city", "Ort", { ph: "z. B. Hannover" })}
     ${field("cu-email", "customer.email", "E-Mail", { type: "email", ph: "name@firma.de" })}
-    ${cu.type === "bestand" ? field("cu-no", "customer.customerNo", "Kundennummer", { ph: "z. B. K-10482" }) : ""}
+    ${field("cu-no", "customer.customerNo", "Kundennummer", { ph: "z. B. 1006213", hint: "Aus TAIFUN bzw. Salesforce, steht im Angebot und in der Angebotsnummer" })}
+    ${field("cu-offer", "offerNo", "Angebotsnummer", { ph: offerNo({ ...state, offerNo: "" }), hint: "Leer lassen für die automatische Nummer" })}
     ${field("cu-sfacc", "customer.sfAccountId", "Salesforce Account-ID", { ph: "001…", hint: "Optional, verknüpft das Angebot mit dem Account" })}
     ${field("cu-sfopp", "customer.sfOpportunityId", "Salesforce Opportunity-ID", { ph: "006…", hint: "Optional, aktualisiert eine bestehende Opportunity" })}
   </div></fieldset>
@@ -948,33 +991,37 @@ function vSchulung() {
     if ((t.pkgs || []).includes(state.pkg.id)) return `Bei ${pk ? pk.name : "diesem Paket"} vorgesehen`;
     return m ? `Zum Modul ${m.name}` : "Optional";
   };
-  return `${head(4, "Schulungen", `Bis ${max} Nutzer sind Online-Schulungen als Pauschale hinterlegt, passend zu Paket und Zusatzmodulen. Nicht benötigte Schulungen schaltest du ab. Dass Anfahrten mit ${eur(tr.travel)} pro Kilometer berechnet werden, steht als Hinweis im Angebot.`)}
-  ${users > max ? `<p class="example-note">Das Angebot hat ${users} Nutzer. Ab ${max + 1} Nutzern sind keine Pauschalen vorgesehen. Plane die Schulung nach Stunden oder schalte Pauschalen manuell zu.</p>` : ""}
-  <fieldset><legend>Schulungspauschalen (online)</legend><div class="mods">${(catalog.trainings || []).map(t => {
+  return `${head(4, "Schulungen und Dienstleistungen", `Bis ${max} AP sind Online-Seminare als Pauschale hinterlegt, passend zu Paket und Zusatzmodulen. Nicht benötigte Positionen schaltest du ab.`)}
+  ${users > max ? `<p class="example-note">Das Angebot hat ${users} AP. Ab ${max + 1} AP sind keine Online-Seminare vorgesehen. Plane die Schulung nach Stunden oder schalte Seminare manuell zu.</p>` : ""}
+  <fieldset><legend>Pauschalen und Dienstleistungen</legend><div class="mods">${(catalog.trainings || []).map(t => {
     const on = trainingIncluded(t), o = (state.trainingSel || {})[t.id];
     return `<div class="mod ${on ? "on" : ""}">
       <button type="button" class="switch" role="switch" aria-checked="${on}" aria-label="${esc(t.name)}" data-act="toggle-train" data-id="${esc(t.id)}"></button>
       <div class="mod-info"><div class="t">${esc(t.name)}</div><div class="d">${esc(why(t))}${o !== undefined ? " · manuell geändert" : ""}</div></div>
-      <div class="mod-price">${eur(t.price)}<span class="muted"> einmalig</span></div>
+      <div class="mod-price">${eur(t.price)}<span class="muted">${t.aufwand ? " je Std, nach Aufwand" : " einmalig"}</span></div>
     </div>`;
   }).join("")}</div></fieldset>
-  <fieldset><legend><label for="hours">Zusätzliche Schulungsstunden</label></legend>
+  <fieldset><legend><label for="hours">${esc(tr.rateName || "Zusätzliche Dienstleistungen")} (Stunden)</label></legend>
     <div class="callout">
       <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">${stepper("hours", "training.hours", 0)}
         <div class="chips">${[0, 4, 8, 16].map(n => `<button type="button" class="chip ${h === n ? "on" : ""}" data-act="set" data-path="training.hours" data-value="${n}" data-num>${n} Std</button>`).join("")}</div></div>
       <div class="small"><span class="muted">nach Stunden zu ${eur(tr.rate)}</span> ${live("training", "once")}</div>
     </div>
   </fieldset>
+  <fieldset><legend><label for="km">Anfahrt (km)</label></legend>
+    <div class="callout">${stepper("km", "training.km", 0, 10)}
+      <div class="small muted">Steht im Angebot unter „Einmalige Investitionen“ mit ${eur(tr.travel)} je km als Einzelpreis (EP), nicht in der Summe.</div></div>
+  </fieldset>
   <div class="field"><label for="note">Bemerkung zum Angebot</label><textarea id="note" data-bind="note" placeholder="z. B. Datenübernahme aus Altsystem bis 31.01. vereinbart">${esc(state.note)}</textarea></div>`;
 }
 
 function costRows(c, f) {
-  return c.lines.filter(l => l[f]).map(l => {
-    const d = `<span class="d">${esc(f === "once" && l.group === "Zusatzmodule" ? "Einrichtungsgebühr" : l.detail || "")}</span>`;
+  return c.lines.filter(l => l[f] || (f === "once" && l.aufwand)).map(l => {
+    const d = `<span class="d">${esc(f === "once" && l.group === "Zusatzmodule" ? "Einmalige Bereitstellungsgebühr" : l.detail || "")}</span>`;
     const gp = l.disc ? (f === "monthly" ? c.mPct : c.oPct) : 0;
     const total = l.manualPct && gp ? ` · insgesamt −${fmtH(r2(l.manualPct + gp))} %` : "";
     const extra = l.manualPct ? `<span class="d man">−${fmtH(l.manualPct)} % Sonderrabatt${total}</span>` : "";
-    return `<tr><td>${esc(l.label)}${d}${extra}</td><td class="m">${eur(l[f])}</td></tr>`;
+    return `<tr><td>${esc(l.label)}${d}${extra}</td><td class="m">${l.aufwand && !l[f] ? "nach Aufwand" : eur(l[f])}</td></tr>`;
   }).join("");
 }
 function vSummary() {
@@ -982,7 +1029,7 @@ function vSummary() {
   const statusPill = { entwurf: ["Entwurf", ""], bereit: ["Bereit für Salesforce", "acc"], uebertragen: ["An Salesforce übertragen", "good"] }[state.sfStatus] || ["Entwurf", ""];
   const mRows = costRows(c, "monthly"), oRows = costRows(c, "once");
   return `<div class="sum-head">
-    <div class="step-head"><p class="eyebrow">Schritt 6 von 6 · Angebot ${esc(state.quoteNo)}</p>
+    <div class="step-head"><p class="eyebrow">Schritt 6 von 6 · Angebot ${esc(offerNo())}</p>
       <h2>${cu.company ? esc(cu.company) : `<span class="muted">Firma noch nicht eingetragen</span>`}</h2>
       <div class="sum-meta">
         <span class="pill">${cu.type === "neu" ? "Neukunde" : "Bestandskunde"}</span>
@@ -1022,11 +1069,13 @@ function vSummary() {
   ${catalog.example ? `<p class="example-note">Berechnet mit Beispielpreisen. Trage unter Einstellungen eure echten Preise ein.</p>` : ""}
 
   <div class="actions">
+    <button class="btn primary" data-act="pdf-make">Angebots-PDF erstellen</button>
     <button class="btn" data-act="save-quote">${state.quoteId ? "Änderungen speichern" : "Angebot speichern"}</button>
-    <button class="btn primary" data-act="sf-send">An Salesforce übergeben</button>
+    <button class="btn" data-act="sf-send">An Salesforce übergeben</button>
     <span class="small muted">Übergabe per ${esc(ad.label)}</span>
     <button class="sneaky ${state.manual && state.manual.on ? "on" : ""}" data-act="toggle-manual" title="Sonderkonditionen" aria-label="Sonderkonditionen" aria-pressed="${!!(state.manual && state.manual.on)}">%</button>
   </div>
+  ${tplInfo ? "" : `<p class="small muted">Für das Angebots-PDF einmal die TAIFUN-Vorlage unter Einstellungen → Angebots-PDF öffnen.</p>`}
   ${state.manual && state.manual.on ? `<div class="man-box"><div class="man-row"><label for="soko">Sonderrabatt</label><input id="soko" type="number" min="0" max="100" step="1" data-bind="manual.value" value="${num(state.manual.value) || ""}" placeholder="0"><span>%</span>${num(state.manual.value) ? `<button class="linkish" data-act="clear-manual">entfernen</button>` : ""}</div><p class="small muted">Gilt für Paket, Cloud und alle rabattfähigen Module (nicht App und TPM), also dieselben Positionen wie der Konditionsrabatt, und kommt zu diesem dazu, z. B. 20 % + 30 % = 50 %.</p></div>` : ""}
 
   <details class="box" id="sf-box"><summary>Salesforce-Daten ansehen</summary><div>
@@ -1040,9 +1089,9 @@ function renderReceipt() {
   const c = calc();
   const groups = ["Paket", "Betrieb", "Einrichtung", "Zusatzmodule", "Schulung"];
   const rows = groups.map(g => c.lines.filter(l => l.group === g).map(l =>
-    `<tr><td>${esc(l.label)}${l.detail && (l.qty || l.id === "cloud-extra" || l.group === "Schulung") ? `<span class="d">${esc(l.detail)}</span>` : ""}</td><td class="m">${l.monthly ? eur(l.monthly) : "–"}</td><td class="m">${l.once ? eur(l.once) : "–"}</td></tr>`).join("")).join("");
+    `<tr><td>${esc(l.label)}${l.detail && (l.qty || l.id === "cloud-extra" || l.group === "Schulung") ? `<span class="d">${esc(l.detail)}</span>` : ""}</td><td class="m">${l.monthly ? eur(l.monthly) : "–"}</td><td class="m">${l.once ? eur(l.once) : l.aufwand ? "n. A." : "–"}</td></tr>`).join("")).join("");
   $("receipt").innerHTML = `
-    <div class="receipt-head"><h3>Kostenübersicht</h3><span class="small muted num">${esc(state.quoteNo)}</span></div>
+    <div class="receipt-head"><h3>Kostenübersicht</h3><span class="small muted num">${esc(offerNo())}</span></div>
     <table><thead><tr><th>Position</th><th>mtl.</th><th>einm.</th></tr></thead><tbody>${rows}
       ${c.mManual || c.oManual ? `<tr class="disc"><td>Sonderrabatt</td><td class="m">${c.mManual ? "−" + eur(c.mManual) : "–"}</td><td class="m">${c.oManual ? "−" + eur(c.oManual) : "–"}</td></tr>` : ""}
       ${c.mDisc || c.oDisc ? `<tr class="disc"><td>${esc(c.group.name)}<span class="d">${esc(discountText(c.group))}</span></td><td class="m">${c.mDisc ? "−" + eur(c.mDisc) : "–"}</td><td class="m">${c.oDisc ? "−" + eur(c.oDisc) : "–"}</td></tr>` : ""}
@@ -1092,16 +1141,16 @@ function cfield(path, label, hint, isNum = true) {
 }
 function renderSettings() {
   if (!draft) draft = clone(catalog);
-  const tabs = { pakete: "Pakete & KI-Bundle", konditionen: "Konditionen", module: "Module", schulung: "Schulungen", betrieb: "Cloud & Allgemein", salesforce: "Salesforce" };
+  const tabs = { pakete: "Pakete & KI-Bundle", konditionen: "Konditionen", module: "Module", schulung: "Schulungen", betrieb: "Cloud & Allgemein", pdf: "Angebots-PDF", salesforce: "Salesforce" };
   const ro = !caps.canEditSettings;
   let body = "";
   if (settingsTab === "pakete") {
-    body = `<h3>Pakete</h3><div class="table-wrap"><table class="edit"><thead><tr><th>Name</th><th>Beschreibung</th><th>€ 1. AP / Monat</th><th>€ je weiterer AP</th><th>Produktcode</th></tr></thead><tbody>
+    body = `<h3>Pakete</h3><div class="table-wrap"><table class="edit"><thead><tr><th>Name</th><th>Beschreibung</th><th>€ 1. AP / Monat</th><th>€ je weiterer AP</th><th>Name im Angebot</th><th>Name weitere AP</th><th>Produktcode</th></tr></thead><tbody>
       ${draft.packages.map((p, i) => `<tr><td>${ci(`packages.${i}.name`, { label: "Name" })}</td><td>${ci(`packages.${i}.desc`, { label: "Beschreibung" })}</td>
-        ${p.variants ? `<td colspan="3" class="small muted">Preise je Variante, siehe unten</td>` : `<td>${ci(`packages.${i}.monthly`, { num: 1, label: "1. AP" })}</td><td>${ci(`packages.${i}.perExtra`, { num: 1, label: "Je weiterer AP" })}</td><td>${ci(`packages.${i}.sku`, { label: "Produktcode" })}</td>`}</tr>`).join("")}
+        ${p.variants ? `<td colspan="5" class="small muted">Preise und Namen je Variante, siehe unten</td>` : `<td>${ci(`packages.${i}.monthly`, { num: 1, label: "1. AP" })}</td><td>${ci(`packages.${i}.perExtra`, { num: 1, label: "Je weiterer AP" })}</td><td>${ci(`packages.${i}.pdfName`, { label: "Name im Angebot" })}</td><td>${ci(`packages.${i}.extraName`, { label: "Name weitere AP" })}</td><td>${ci(`packages.${i}.sku`, { label: "Produktcode" })}</td>`}</tr>`).join("")}
       </tbody></table></div>
-      <h3>KI-Bundle Varianten</h3><div class="table-wrap"><table class="edit"><thead><tr><th>Name</th><th>Beschreibung</th><th>€ 1. AP / Monat</th><th>€ je weiterer AP</th><th>Produktcode</th></tr></thead><tbody>
-      ${draft.kiVariants.map((v, i) => `<tr><td>${ci(`kiVariants.${i}.name`, { label: "Name" })}</td><td>${ci(`kiVariants.${i}.desc`, { label: "Beschreibung" })}</td><td>${ci(`kiVariants.${i}.monthly`, { num: 1, label: "1. AP" })}</td><td>${ci(`kiVariants.${i}.perExtra`, { num: 1, label: "Je weiterer AP" })}</td><td>${ci(`kiVariants.${i}.sku`, { label: "Produktcode" })}</td></tr>`).join("")}
+      <h3>KI-Bundle Varianten</h3><div class="table-wrap"><table class="edit"><thead><tr><th>Name</th><th>Beschreibung</th><th>€ 1. AP / Monat</th><th>€ je weiterer AP</th><th>Name im Angebot</th><th>Name weitere AP</th><th>HalloPetra-Zeile</th><th>Produktcode</th></tr></thead><tbody>
+      ${draft.kiVariants.map((v, i) => `<tr><td>${ci(`kiVariants.${i}.name`, { label: "Name" })}</td><td>${ci(`kiVariants.${i}.desc`, { label: "Beschreibung" })}</td><td>${ci(`kiVariants.${i}.monthly`, { num: 1, label: "1. AP" })}</td><td>${ci(`kiVariants.${i}.perExtra`, { num: 1, label: "Je weiterer AP" })}</td><td>${ci(`kiVariants.${i}.pdfName`, { label: "Name im Angebot" })}</td><td>${ci(`kiVariants.${i}.extraName`, { label: "Name weitere AP" })}</td><td>${ci(`kiVariants.${i}.hpName`, { label: "HalloPetra-Zeile" })}</td><td>${ci(`kiVariants.${i}.sku`, { label: "Produktcode" })}</td></tr>`).join("")}
       </tbody></table></div>`;
   } else if (settingsTab === "konditionen") {
     body = `<p class="small muted">Gilt nur für Neukunden. Der Monatsrabatt läuft für die angegebene Dauer, 0 Monate bedeutet dauerhaft. Standard ist nur ein Monatsrabatt, der Einmalrabatt steht deshalb auf 0. Welche Module rabattfähig sind, stellst du unter Module ein.</p>
@@ -1113,22 +1162,28 @@ function renderSettings() {
       <label class="small" style="display:flex;gap:8px;align-items:center">${cc("training.discountable", "Rabatt gilt auch für Schulungen")} Einmalrabatt gilt auch für Schulungen</label>`;
   } else if (settingsTab === "module") {
     body = `<p class="small muted">Preismodell „Pauschal“: fester Monatspreis. „Grundpreis + je Nutzer“: Grundpreis plus Anzahl × Nutzergebühr; die Anzahl wird im Angebot abgefragt. „€ einmalig“ bleibt bei 0, außer das Modul hat eine Einrichtungsgebühr.</p>
-      <div class="table-wrap"><table class="edit"><thead><tr><th>Modul</th><th>Beschreibung</th><th>Preismodell</th><th>€ / Monat (Grundpreis)</th><th>€ je Einheit</th><th>Einheit</th><th>€ einmalig</th><th>Produktcode</th><th>Rabatt</th><th></th></tr></thead><tbody>
+      <div class="table-wrap"><table class="edit"><thead><tr><th>Modul</th><th>Beschreibung</th><th>Preismodell</th><th>€ / Monat (Grundpreis)</th><th>€ je Einheit</th><th>Einheit</th><th>€ einmalig</th><th>Name im Angebot</th><th>Name je Einheit</th><th>Name einmalig</th><th>Produktcode</th><th>Rabatt</th><th></th></tr></thead><tbody>
       ${draft.modules.map((m, i) => `<tr><td>${ci(`modules.${i}.name`, { label: "Modul" })}</td><td>${ci(`modules.${i}.desc`, { label: "Beschreibung" })}</td>
         <td><select id="c-modules.${i}.pricing" data-cbind="modules.${i}.pricing" aria-label="Preismodell"><option value="flat" ${m.pricing === "flat" ? "selected" : ""}>Pauschal</option><option value="perUser" ${m.pricing === "perUser" ? "selected" : ""}>Grundpreis + je Nutzer</option></select></td>
         <td>${ci(`modules.${i}.monthly`, { num: 1, label: "Grundpreis" })}</td>
         <td>${m.pricing === "perUser" ? ci(`modules.${i}.perUser`, { num: 1, label: "Preis je Einheit" }) : `<span class="muted">–</span>`}</td>
         <td>${m.pricing === "perUser" ? ci(`modules.${i}.unit`, { label: "Einheit", w: "90px" }) : `<span class="muted">–</span>`}</td>
-        <td>${ci(`modules.${i}.once`, { num: 1, label: "Einmalig" })}</td><td>${ci(`modules.${i}.sku`, { label: "Produktcode" })}</td>
+        <td>${ci(`modules.${i}.once`, { num: 1, label: "Einmalig" })}</td>
+        <td>${m.pricing === "perUser" ? ci(`modules.${i}.baseName`, { label: "Name Grundgebühr im Angebot" }) : ci(`modules.${i}.pdfName`, { label: "Name im Angebot" })}</td>
+        <td>${m.pricing === "perUser" ? ci(`modules.${i}.userName`, { label: "Name je Einheit im Angebot" }) : `<span class="muted">–</span>`}</td>
+        <td>${ci(`modules.${i}.onceName`, { label: "Name der einmaligen Position" })}</td>
+        <td>${ci(`modules.${i}.sku`, { label: "Produktcode" })}</td>
         <td class="c"><input id="c-modules.${i}.discountable" type="checkbox" data-cbind="modules.${i}.discountable" ${m.discountable !== false ? "checked" : ""} aria-label="Rabattfähig"></td>
         <td><button class="btn sm danger" data-act="del-row" data-list="modules" data-i="${i}">Entfernen</button></td></tr>`).join("")}
       </tbody></table></div>
       <div><button class="btn sm" data-act="add-module">Modul hinzufügen</button></div>`;
   } else if (settingsTab === "schulung") {
-    body = `<p class="small muted">Pauschalen kommen automatisch ins Angebot, wenn das Paket angehakt oder das Modul gewählt ist, und nur bis zur eingestellten Nutzerzahl. Im Angebot lassen sie sich einzeln abschalten.</p>
-      <div class="form-grid">${cfield("training.flatMaxUsers", "Pauschalen automatisch bis Nutzer")}${cfield("training.rate", "Stundensatz € (zusätzliche Stunden)")}${cfield("training.travel", "Anfahrt € pro Kilometer", "Erscheint als Hinweis im Angebot, nicht in der Summe")}${cfield("training.sku", "Produktcode Schulungsstunden", "", false)}</div>
-      <div class="table-wrap"><table class="edit"><thead><tr><th>Schulung</th><th>€ einmalig</th>${draft.packages.map(p => `<th>${esc(p.name)}</th>`).join("")}<th>Bei Modul</th><th>Produktcode</th><th></th></tr></thead><tbody>
-      ${(draft.trainings || []).map((t, i) => `<tr><td>${ci(`trainings.${i}.name`, { label: "Schulung" })}</td><td>${ci(`trainings.${i}.price`, { num: 1, label: "Preis" })}</td>
+    body = `<p class="small muted">Positionen kommen automatisch ins Angebot, wenn das Paket angehakt oder das Modul gewählt ist. Seminare nur bis zur eingestellten Zahl an AP. Im Angebot lassen sich alle einzeln abschalten. Der Name steht genau so im Angebots-PDF, ein „*“ am Ende verweist auf den Hinweis zu den Online-Seminaren.</p>
+      <div class="form-grid">${cfield("training.flatMaxUsers", "Seminare automatisch bis AP")}${cfield("training.rate", "Stundensatz €")}${cfield("training.rateName", "Name der Stundenposition", "", false)}${cfield("training.sku", "Produktcode Stunden", "", false)}
+        ${cfield("training.travel", "Anfahrt € pro km")}${cfield("training.km", "km im Angebot (Vorgabe)")}${cfield("training.travelName", "Name der Anfahrtsposition", "", false)}</div>
+      <div class="table-wrap"><table class="edit"><thead><tr><th>Position im Angebot</th><th>€</th><th>Seminar</th><th>nach Aufwand</th>${draft.packages.map(p => `<th>${esc(p.name)}</th>`).join("")}<th>Bei Modul</th><th>Produktcode</th><th></th></tr></thead><tbody>
+      ${(draft.trainings || []).map((t, i) => `<tr><td>${ci(`trainings.${i}.name`, { label: "Position" })}</td><td>${ci(`trainings.${i}.price`, { num: 1, label: "Preis" })}</td>
+        <td class="c">${cc(`trainings.${i}.seminar`, "Seminar, nur bis X AP automatisch")}</td><td class="c">${cc(`trainings.${i}.aufwand`, "Nach Aufwand, ohne Gesamtpreis")}</td>
         ${draft.packages.map(p => `<td class="c"><input type="checkbox" id="tp-${i}-${esc(p.id)}" data-act="toggle-tpkg" data-i="${i}" data-pkg="${esc(p.id)}" ${(t.pkgs || []).includes(p.id) ? "checked" : ""} aria-label="Automatisch bei ${esc(p.name)}"></td>`).join("")}
         <td><select id="c-trainings.${i}.module" data-cbind="trainings.${i}.module" aria-label="Bei Modul"><option value="">–</option>${draft.modules.map(m => `<option value="${esc(m.id)}" ${t.module === m.id ? "selected" : ""}>${esc(m.name)}</option>`).join("")}</select></td>
         <td>${ci(`trainings.${i}.sku`, { label: "Produktcode" })}</td>
@@ -1138,9 +1193,22 @@ function renderSettings() {
   } else if (settingsTab === "betrieb") {
     body = `<h3>Cloud-Betrieb</h3><div class="form-grid">
         ${cfield("cloud.monthly", "Pauschale € / Monat")}${cfield("cloud.included", "Enthaltene Arbeitsplätze")}${cfield("cloud.perExtra", "Je weiterer Arbeitsplatz € / Monat")}${cfield("cloud.once", "Einrichtung Cloud € einmalig")}
-        ${cfield("cloud.sku", "Produktcode Pauschale", "", false)}${cfield("cloud.extraSku", "Produktcode weiterer Arbeitsplatz", "", false)}</div>
-      <h3>Lokaler Betrieb</h3><div class="form-grid">${cfield("local.once", "Einrichtung lokal € einmalig")}${cfield("local.sku", "Produktcode", "", false)}</div>
-      <h3>Allgemein</h3><div class="form-grid">${cfield("vat", "MwSt. %")}${cfield("validDays", "Angebot gültig (Tage)")}</div>`;
+        ${cfield("cloud.sku", "Produktcode Pauschale", "", false)}${cfield("cloud.extraSku", "Produktcode weiterer Arbeitsplatz", "", false)}
+        ${cfield("cloud.pdfName", "Name im Angebot", "", false)}${cfield("cloud.extraName", "Name weiterer Arbeitsplatz", "", false)}${cfield("cloud.setupName", "Name der Einrichtung", "", false)}</div>
+      <h3>Lokaler Betrieb</h3><div class="form-grid">${cfield("local.once", "Einrichtung lokal € einmalig")}${cfield("local.sku", "Produktcode", "", false)}${cfield("local.setupName", "Name der Einrichtung", "", false)}</div>
+      <h3>Allgemein</h3><div class="form-grid">${cfield("vat", "MwSt. %")}</div>`;
+  } else if (settingsTab === "pdf") {
+    const prof = lsGet("profile", {}) || {};
+    const pfield = (k, label, ph) => `<div class="field"><label for="p-${k}">${label}</label><input id="p-${k}" type="text" data-pbind="${k}" value="${esc(prof[k] || "")}" placeholder="${esc(ph)}"></div>`;
+    body = `<h3>TAIFUN-Vorlage</h3>
+      <div class="price-src"><div class="price-src-t"><p class="eyebrow">Vorlage</p><p><b>${tplInfo ? esc(tplInfo.name) : "Noch keine Vorlage"}</b></p>
+        <p class="small muted">${tplInfo ? `${tplInfo.pages} Seiten${tplInfo.ki ? ", mit KI-Upgrade-Vertrag" : ", ohne KI-Upgrade-Vertrag"} · eingelesen ${fmtDateTime(tplInfo.read)}` : "Ein TAIFUN-Aboangebot als PDF. Briefpapier, Vertragstexte und Anlagen kommen daraus, Kundendaten, Preise und Ankreuzfelder setzt die App."}</p></div>
+        <div class="actions">${canLink ? `<button class="btn ${tplInfo ? "" : "primary"}" data-act="tpl-link">Vorlage verknüpfen…</button>` : `<button class="btn ${tplInfo ? "" : "primary"}" data-act="tpl-open">Vorlage öffnen…</button>`}${tplInfo ? `<button class="btn danger" data-act="tpl-remove">Entfernen</button>` : ""}</div></div>
+      <p class="small muted" style="max-width:80ch">Am besten liegt die Vorlage im gemeinsamen OneDrive-Ordner neben der Preisdatei. Nimm ein Angebot mit KI-Bundle, dann ist der KI-Upgrade-Vertrag (Anlage 3) enthalten. Die App lässt ihn weg, wenn kein KI-Bundle angeboten wird. ${canLink ? "Am PC wird die verknüpfte Datei bei jedem PDF neu gelesen." : "Auf dem iPad wird eine Kopie auf dem Gerät gespeichert."}</p>
+      <h3>Meine Signatur im Anschreiben</h3>
+      <p class="small muted">Gilt nur auf diesem Gerät. Leere Felder übernehmen den Text aus der Vorlage.</p>
+      <div class="form-grid">${pfield("name", "Name", "z. B. Alexander Epp")}${pfield("title", "Funktion", "z. B. Gebietsverkaufsleiter")}${pfield("mobile", "Mobil", "z. B. 0172-1234567")}${pfield("email", "E-Mail", "name@oneqrew.com")}</div>
+      <h3>Vertrag</h3><div class="form-grid">${cfield("termMonths", "Grundlaufzeit (Monate)", "Für den Satz zum rabattierten Preis")}${cfield("validDays", "Angebot gültig (Tage)")}</div>`;
   } else {
     const sf = draft.salesforce;
     body = `<div class="form-grid">
@@ -1186,6 +1254,86 @@ function renderSettings() {
   </div>`;
 }
 
+/* ---------- Angebots-PDF im TAIFUN-Layout (Vorlage z. B. im OneDrive) ---------- */
+let tplInfo = lsGet("tplInfo"); // { name, pages, ki, read }
+async function setTemplate(bytes, name, handle) {
+  if (!window.AngebotPDF) throw new Error("Die PDF-Funktion ist hier nicht verfügbar.");
+  const info = await AngebotPDF.inspect(bytes);
+  if (!info.ok) throw new Error("Das PDF sieht nicht wie ein TAIFUN-Aboangebot aus. Bitte ein Angebot mit Anschreiben und Angebotsübersicht wählen.");
+  await idbSet("tplBytes", bytes); await idbSet("tplHandle", handle);
+  tplInfo = { name, pages: info.pages, ki: info.ki, read: Date.now() }; lsSet("tplInfo", tplInfo);
+}
+// Am PC die verknüpfte Datei frisch lesen, sonst die gespeicherte Kopie nehmen
+async function templateBytes() {
+  const h = canLink ? await idbGet("tplHandle") : null;
+  if (h) {
+    try {
+      if (await ensurePermission(h, "read")) {
+        const bytes = new Uint8Array(await (await h.getFile()).arrayBuffer());
+        await idbSet("tplBytes", bytes); return bytes;
+      }
+    } catch { /* Datei nicht erreichbar: gespeicherte Kopie */ }
+  }
+  return await idbGet("tplBytes");
+}
+const NUM2 = new Intl.NumberFormat("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function pdfData(c = calc()) {
+  const cu = state.customer, created = state.createdAt ? new Date(state.createdAt) : new Date();
+  const row = r => ({ name: r.name, qty: r.qty, unit: r.unit, pct: r.pct, total: r.total, ep: r.ep, unitName: r.unitName });
+  const total = k => r2(c.sections[k].reduce((a, r) => a + (r.total || 0), 0));
+  const term = int(catalog.termMonths) || 24;
+  const except = catalog.modules.filter(m => m.discountable === false && state.modules[m.id] && state.modules[m.id].on).map(m => m.name.replace(/\s*\(.*\)\s*$/, ""));
+  const discounted = c.sections.monthly.some(r => r.pct > 0);
+  return {
+    offerNo: offerNo(), date: fmtDate(created), validUntil: fmtDate(validUntil()), customerNo: cu.customerNo,
+    customer: { name: cu.company, contact: cu.contact, street: cu.street, zip: cu.zip, city: cu.city },
+    seller: lsGet("profile", {}) || {}, hosting: state.hosting.mode,
+    app: !!(state.modules.app && state.modules.app.on), ki: c.kiName, kiNote: c.isKi,
+    monthly: { rows: c.sections.monthly.map(row), total: c.monthlyNet },
+    onetime: { rows: c.sections.onetime.map(row), total: total("onetime") },
+    service: { rows: c.sections.service.map(row), total: total("service") },
+    discountText: discounted ? `Der rabattierte Preis beträgt somit ${NUM2.format(c.monthlyNet)} € und ist ${c.months && c.months < term ? `für die ersten ${c.months} Monate gültig` : "gültig während der Grundlaufzeit des Vertrages"}.${except.length ? ` Ausgenommen davon ${except.join(", ")}.` : ""}` : "",
+    invoiceEmail: ""
+  };
+}
+function pdfFileName() {
+  const name = (state.customer.company || "Angebot").replace(/[\\/:*?"<>|]+/g, "").replace(/\s+/g, "_").slice(0, 60);
+  return `Aboangebot_${offerNo()}_${name}.pdf`;
+}
+function shareOrDownload(file) {
+  $("toast").hidden = true;
+  if (navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], title: file.name }).catch(() => {}); return; }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(file); a.download = file.name; document.body.append(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+}
+async function makePdf(btn) {
+  const cu = state.customer, missing = [];
+  if (!cu.company) missing.push("Firma");
+  if (!cu.customerNo) missing.push("Kundennummer");
+  if (!cu.street || !cu.city) missing.push("Anschrift");
+  if (missing.length) { toast(`Für das Angebots-PDF fehlt noch: ${missing.join(", ")} (Schritt 1).`); return; }
+  if (!window.AngebotPDF) { toast("Die PDF-Funktion ist hier nicht verfügbar."); return; }
+  const bytes = await templateBytes();
+  if (!bytes) { draft = clone(catalog); settingsDirty = false; view = "settings"; settingsTab = "pdf"; render(); toast("Bitte zuerst die TAIFUN-Vorlage öffnen."); return; }
+  // Am PC zuerst den Speicherort wählen (der Browser erlaubt den Dialog nur direkt nach dem Klick)
+  let handle = null;
+  if ("showSaveFilePicker" in window && !caps.downloads) {
+    try { handle = await window.showSaveFilePicker({ suggestedName: pdfFileName(), id: "angebote", types: [{ description: "PDF", accept: { "application/pdf": [".pdf"] } }] }); }
+    catch (err) { if (err && err.name === "AbortError") return; handle = null; }
+  }
+  const old = btn.textContent; btn.disabled = true; btn.textContent = "PDF wird erstellt …";
+  try {
+    if (!state.createdAt) state.createdAt = new Date().toISOString();
+    const pdf = await AngebotPDF.build(bytes, pdfData());
+    if (handle) { const w = await handle.createWritable(); await w.write(pdf); await w.close(); toast(`Gespeichert: ${handle.name}`); return; }
+    if (caps.downloads) { await caps.downloads.save({ filename: pdfFileName(), data: pdf }); return; }
+    const file = new File([pdf], pdfFileName(), { type: "application/pdf" });
+    toast("Das Angebots-PDF ist fertig.", { label: navigator.canShare && navigator.canShare({ files: [file] }) ? "Sichern oder teilen" : "Herunterladen", fn: () => shareOrDownload(file) });
+  } catch (err) { console.error(err); toast(err.message || "Das PDF konnte nicht erstellt werden."); }
+  finally { btn.disabled = false; btn.textContent = old; }
+}
+
 /* ---------- Toast & Datei/Clipboard ---------- */
 let toastT;
 function toast(msg, action) {
@@ -1218,7 +1366,7 @@ function copyJson(payload) {
 }
 async function downloadJson(payload) {
   try {
-    await saveFile(`${state.quoteNo}.json`, JSON.stringify(payload, null, 2));
+    await saveFile(`${offerNo()}.json`, JSON.stringify(payload, null, 2));
     toast("Datei gespeichert.");
   } catch (e) { if (e && e.code !== "declined") toast("Die Datei konnte nicht gespeichert werden."); }
 }
@@ -1305,11 +1453,25 @@ document.addEventListener("click", async e => {
       t.pkgs = [...set]; settingsDirty = true; rerenderKeepFocus(); break;
     }
     case "add-training":
-      draft.trainings.push({ id: "t" + Date.now().toString(36), name: "Neue Schulung", price: 0, pkgs: [], module: "", sku: "" });
+      draft.trainings.push({ id: "t" + Date.now().toString(36), name: "Neue Position", price: 0, pkgs: [], module: "", sku: "", seminar: false, aufwand: false });
       settingsDirty = true; render(); break;
     case "tab": settingsTab = b.dataset.tab; render(); break;
+    case "tpl-link":
+      try {
+        const [h] = await window.showOpenFilePicker({ types: [{ description: "TAIFUN-Angebot (PDF)", accept: { "application/pdf": [".pdf"] } }] });
+        await setTemplate(new Uint8Array(await (await h.getFile()).arrayBuffer()), h.name, h);
+        render(); toast(`Vorlage „${h.name}“ verknüpft.`);
+      } catch (err) { if (err && err.name !== "AbortError") toast(err.message || "Die Vorlage konnte nicht gelesen werden."); }
+      break;
+    case "tpl-open": $("tpl-input").click(); break;
+    case "tpl-remove":
+      if (!arm(b, "tpl", "Wirklich entfernen?")) break;
+      await idbSet("tplBytes", undefined); await idbSet("tplHandle", undefined);
+      tplInfo = null; try { localStorage.removeItem("angebotsrechner:tplInfo"); } catch {}
+      render(); toast("Vorlage entfernt."); break;
+    case "pdf-make": await makePdf(b); break;
     case "add-module":
-      draft.modules.push({ id: "m" + Date.now().toString(36), name: "Neues Modul", desc: "", pricing: "flat", monthly: 0, perUser: 0, unit: "Nutzer", once: 0, sku: "", discountable: true });
+      draft.modules.push({ id: "m" + Date.now().toString(36), name: "Neues Modul", desc: "", pricing: "flat", monthly: 0, perUser: 0, unit: "Nutzer", once: 0, sku: "", discountable: true, pdfName: "", baseName: "", userName: "", onceName: "" });
       settingsDirty = true; render(); break;
     case "add-group":
       draft.groups.push({ id: "g" + Date.now().toString(36), name: "Neue Kondition", monthlyPct: 0, oncePct: 0, months: 0 });
@@ -1377,11 +1539,18 @@ document.addEventListener("click", async e => {
 });
 document.addEventListener("input", e => {
   const t = e.target;
+  if (t.dataset.pbind) { const prof = lsGet("profile", {}) || {}; prof[t.dataset.pbind] = t.value.trim(); lsSet("profile", prof); return; }
   if (t.dataset.bind) { setPath(state, t.dataset.bind, t.type === "number" ? Math.max(0, num(t.value)) : readVal(t)); updateLive(); }
   else if (t.dataset.cbind) { setPath(draft, t.dataset.cbind, readVal(t)); settingsDirty = true; const s = $("settings-status"); if (s) s.textContent = "Ungespeicherte Änderungen"; }
 });
 document.addEventListener("change", async e => {
   const t = e.target;
+  if (t.id === "tpl-input" && t.files && t.files[0]) {
+    const f = t.files[0]; t.value = "";
+    try { await setTemplate(new Uint8Array(await f.arrayBuffer()), f.name, undefined); render(); toast(`Vorlage „${f.name}“ übernommen.`); }
+    catch (err) { toast(err.message || "Die Vorlage konnte nicht gelesen werden."); }
+    return;
+  }
   if (t.id === "price-input" && t.files && t.files[0]) {
     const f = t.files[0]; t.value = "";
     try { applyFilePrices(parsePriceFile(await f.text()), { source: "datei", name: f.name, linked: false, modified: f.lastModified, read: Date.now() }); render(); toast(`Preise aus „${f.name}“ übernommen.`); }
