@@ -256,6 +256,8 @@ table.edit td.c { text-align: center; }
 .cost-card td .d.man { color: var(--deal); }
 .linkish { border: 0; background: none; padding: 0; color: var(--deal); text-decoration: underline; cursor: pointer; font-size: inherit; }
 
+.price-src { display: flex; justify-content: space-between; align-items: center; gap: 12px 20px; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; background: var(--surface-2); }
+.price-src-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .toast-btn { margin-left: 10px; border: 1px solid currentColor; background: transparent; color: inherit; border-radius: 6px; padding: 3px 10px; cursor: pointer; font-weight: 600; }
 code { font-family: var(--f-num); font-size: 0.9em; }
 #toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg);
@@ -297,6 +299,7 @@ code { font-family: var(--f-num); font-size: 0.9em; }
   <aside class="receipt" id="receipt" aria-label="Kostenübersicht"></aside>
 </div>
 <div id="toast" role="status" hidden></div>
+<input type="file" id="price-input" accept="application/json,.json" hidden>
 
 <script>
 /* ============================================================
@@ -438,7 +441,9 @@ let draft = null;              // Einstellungs-Entwurf
 let settingsTab = "pakete";
 let settingsDirty = false;
 let quotes = [];
-let centralCatalog = null, localPrices = false; // zentrale Preise aus preise.json, ggf. eigene Preise dieses Geräts
+let centralCatalog = null, localPrices = false; // Preise von preise.json neben der App, ggf. eigene Preise dieses Geräts
+let priceMeta = lsGet("catalogMeta");            // Herkunft der Preise dieses Geräts: { source: "datei" | "geraet", name, read, modified }
+let priceFile = null;                            // verknüpfte Preisdatei am PC: { handle, name, needsPermission, error }
 const caps = { db: null, user: null, downloads: null, canEditSettings: true, shared: false };
 
 function freshState() {
@@ -684,6 +689,106 @@ async function loadCentral() {
     const r = await fetch("preise.json", { cache: "no-cache" });
     return r.ok ? mergeCatalog(await r.json()) : null;
   } catch { return null; }
+}
+
+/* ---------- Preisdatei (lokal, z. B. im gemeinsamen OneDrive-Ordner) ----------
+   PC (Edge/Chrome): Datei wird verknüpft und bei jedem Start neu gelesen, Änderungen lassen sich zurückschreiben.
+   iPad/Safari: Datei über die Dateien-App öffnen, die Preise werden auf dem Gerät gespeichert. */
+const canLink = "showOpenFilePicker" in window;
+function idb() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open("angebotsmappe", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("kv");
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+}
+async function idbGet(k) {
+  try { const d = await idb(); return await new Promise((res, rej) => { const q = d.transaction("kv").objectStore("kv").get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); }
+  catch { return undefined; }
+}
+async function idbSet(k, v) {
+  try {
+    const d = await idb();
+    await new Promise((res, rej) => { const t = d.transaction("kv", "readwrite"); const st = t.objectStore("kv"); if (v === undefined) st.delete(k); else st.put(v, k); t.oncomplete = res; t.onerror = () => rej(t.error); });
+  } catch {}
+}
+function parsePriceFile(text) {
+  let data;
+  try { data = JSON.parse(text); } catch { throw new Error("Die Datei ist kein gültiges JSON."); }
+  if (!data || !Array.isArray(data.packages) || !Array.isArray(data.modules)) throw new Error("Das ist keine Preisdatei der Angebotsmappe.");
+  return data;
+}
+function applyFilePrices(data, meta) {
+  lsSet("catalog", data); lsSet("catalogMeta", meta);
+  catalog = mergeCatalog(data); localPrices = true; priceMeta = meta;
+  if (view === "settings") { draft = clone(catalog); settingsDirty = false; }
+  if (!catalog.groups.some(g => g.id === state.customer.group)) state.customer.group = "none";
+}
+async function readLinkedFile(handle) {
+  const f = await handle.getFile();
+  applyFilePrices(parsePriceFile(await f.text()), { source: "datei", name: f.name, linked: true, modified: f.lastModified, read: Date.now() });
+}
+async function initPriceFile() {
+  if (!canLink) return;
+  const handle = await idbGet("priceHandle");
+  if (!handle) return;
+  priceFile = { handle, name: handle.name, needsPermission: false };
+  try {
+    if ((await handle.queryPermission({ mode: "read" })) === "granted") await readLinkedFile(handle);
+    else priceFile.needsPermission = true;
+  } catch (e) { priceFile.error = e.message && e.message.startsWith("D") ? e.message : "Die Preisdatei konnte nicht gelesen werden. Liegt sie noch am selben Ort?"; }
+}
+async function ensurePermission(handle, mode) {
+  if ((await handle.queryPermission({ mode })) === "granted") return true;
+  return (await handle.requestPermission({ mode })) === "granted";
+}
+// Muss aus einem Klick heraus laufen: Der Browser fragt dann einmal, ob die App die Datei lesen darf.
+async function reloadPriceFile() {
+  if (!priceFile) return;
+  try {
+    if (!(await ensurePermission(priceFile.handle, "read"))) { toast("Ohne Erlaubnis kann die App die Preisdatei nicht lesen."); return; }
+    await readLinkedFile(priceFile.handle); priceFile.needsPermission = false; priceFile.error = null;
+    rerenderKeepFocus(); toast("Preise neu eingelesen.");
+  } catch (e) { priceFile.error = e.message && e.message.startsWith("D") ? e.message : "Die Preisdatei konnte nicht gelesen werden. Liegt sie noch am selben Ort?"; rerenderKeepFocus(); }
+}
+// Einstellungen in die Preisdatei schreiben und danach wieder einlesen (prüft die Datei gleich mit)
+async function writePriceFile(handle) {
+  const data = clone(draft); data.example = false;
+  const w = await handle.createWritable();
+  await w.write(JSON.stringify(data, null, 2) + "\n"); await w.close();
+  await readLinkedFile(handle);
+}
+const fmtDateTime = t => new Date(t).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+function priceSourceBox() {
+  const openBtn = canLink
+    ? `<button class="btn ${priceFile ? "" : "primary"}" data-act="price-link">${priceFile ? "Andere Datei verknüpfen…" : "Preisdatei verknüpfen…"}</button>`
+    : `<button class="btn ${priceMeta && priceMeta.source === "datei" ? "" : "primary"}" data-act="price-open">Preisdatei öffnen…</button>`;
+  let title, detail, btns;
+  if (priceFile) {
+    title = `Preisdatei „${esc(priceFile.name)}“`;
+    detail = priceFile.error ? priceFile.error
+      : priceFile.needsPermission ? "Der Browser fragt nach einem Neustart einmal nach, ob die App die Datei lesen darf."
+      : `Wird bei jedem Start neu gelesen. Zuletzt ${fmtDateTime(priceMeta.read)}, Datei vom ${fmtDateTime(priceMeta.modified)}.`;
+    btns = `<button class="btn primary" data-act="price-reload">${priceFile.needsPermission ? "Preisdatei einlesen" : "Neu einlesen"}</button>${openBtn}<button class="btn danger" data-act="price-unlink">Verknüpfung lösen</button>`;
+  } else if (priceMeta && priceMeta.source === "datei") {
+    title = `Preisdatei „${esc(priceMeta.name)}“`;
+    detail = `Auf diesem Gerät gespeichert, eingelesen ${fmtDateTime(priceMeta.read)}. Bei neuen Preisen die Datei erneut öffnen.`;
+    btns = `${openBtn}<button class="btn danger" data-act="use-central">Entfernen</button>`;
+  } else if (localPrices) {
+    title = "Eigene Preise dieses Geräts";
+    detail = "In den Einstellungen gespeichert, gelten nur hier.";
+    btns = `${openBtn}<button class="btn danger" data-act="use-central">Verwerfen</button>`;
+  } else if (centralCatalog && !centralCatalog.example) {
+    title = "Preise vom Server (preise.json)";
+    detail = "Kommen mit der App und werden beim Öffnen mit Internet aktualisiert.";
+    btns = openBtn;
+  } else {
+    title = "Beispielpreise";
+    detail = canLink ? "Noch keine Preisdatei. Preise unten eintragen und mit „Als Preisdatei speichern…“ im OneDrive-Ordner ablegen, oder eine vorhandene Datei verknüpfen."
+      : "Noch keine Preisdatei geöffnet. Die Preisdatei wird am PC angelegt und hier über die Dateien-App geöffnet.";
+    btns = openBtn;
+  }
+  return `<div class="price-src"><div class="price-src-t"><p class="eyebrow">Preisquelle</p><p><b>${title}</b></p><p class="small muted">${detail}</p></div><div class="actions">${btns}</div></div>`;
 }
 
 /* ============================================================
@@ -946,7 +1051,7 @@ function renderReceipt() {
       <div class="tot m"><span class="small muted">Monatlich netto</span><span class="money">${eur(c.monthlyNet)}</span></div>
       <div class="tot"><span class="small muted">Einmalig netto</span><span class="money">${eur(c.onceNet)}</span></div>
     </div>
-    ${catalog.example ? `<p class="example-note">Beispielpreise. Echte Preise unter Einstellungen eintragen.</p>` : ""}
+    ${catalog.example ? `<p class="example-note">Beispielpreise. Unter Einstellungen die Preisdatei öffnen.</p>` : ""}
     ${localPrices && !caps.shared ? `<p class="example-note">Dieses Gerät nutzt eigene Preise statt der zentralen.</p>` : ""}`;
 }
 function updateLive() {
@@ -1060,19 +1165,23 @@ function renderSettings() {
       <div><button class="btn sm" data-act="add-import">Zuordnung hinzufügen</button></div>`;
   }
   return `<div class="panel">
-    <div class="page-head"><div class="step-head"><p class="eyebrow">${caps.shared ? "Gilt für alle, die diesen Rechner nutzen" : localPrices ? "Dieses Gerät nutzt eigene Preise" : "Zentrale Preise aus preise.json"}</p><h2>Einstellungen</h2></div></div>
-    ${caps.shared ? "" : `<p class="small muted" style="max-width:75ch">Die Preise kommen zentral aus der Datei <code>preise.json</code> im GitHub-Repository. Um sie für alle zu ändern: hier anpassen, <b>Als preise.json sichern</b> und die Datei im Repository ersetzen. <b>Nur auf diesem Gerät speichern</b> gilt nur für dieses Gerät und hat dort Vorrang vor den zentralen Preisen.</p>`}
+    <div class="page-head"><div class="step-head"><p class="eyebrow">${caps.shared ? "Gilt für alle, die diesen Rechner nutzen" : "Preise und Einstellungen"}</p><h2>Einstellungen</h2></div></div>
+    ${caps.shared ? "" : priceSourceBox()}
+    ${caps.shared ? "" : `<p class="small muted" style="max-width:80ch">Die Preise liegen in einer Preisdatei (<code>preise.json</code>), am besten im gemeinsamen OneDrive-Ordner. ${canLink ? "Am PC wird sie verknüpft und bei jedem Start neu gelesen. Änderungen hier landen mit <b>In Preisdatei speichern</b> direkt in der Datei im OneDrive und gelten für alle." : "Auf dem iPad wird sie über die Dateien-App geöffnet und auf dem Gerät gespeichert. Bei neuen Preisen die Datei erneut öffnen."}</p>`}
     ${draft.example ? `<p class="example-note">Aktuell sind Beispielpreise hinterlegt. Trage eure echten Preise ein und speichere.</p>` : ""}
     ${ro ? `<p class="example-note">Du kannst die Einstellungen ansehen. Ändern dürfen nur Bearbeiter dieses Rechners.</p>` : ""}
     <div class="tabs" role="tablist">${Object.entries(tabs).map(([k, v]) => `<button role="tab" aria-selected="${settingsTab === k}" class="${settingsTab === k ? "on" : ""}" data-act="tab" data-tab="${k}">${v}</button>`).join("")}</div>
     ${body}
     <div class="settings-bar nav">
       ${caps.shared ? `<button class="btn danger" data-act="reset-settings" ${ro ? "disabled" : ""}>Auf Beispielwerte zurücksetzen</button>`
-        : localPrices ? `<button class="btn danger" data-act="use-central">Zentrale Preise verwenden</button>` : "<span></span>"}
+        : "<span></span>"}
       <div class="actions"><span class="status-line" id="settings-status">${settingsDirty ? "Ungespeicherte Änderungen" : ""}</span>
         <button class="btn" data-act="cancel-settings">Verwerfen</button>
         ${caps.shared ? `<button class="btn primary" data-act="save-settings" ${ro ? "disabled" : ""}>Einstellungen speichern</button>`
-          : `<button class="btn" data-act="save-settings">Nur auf diesem Gerät speichern</button><button class="btn primary" data-act="export-catalog">Als preise.json sichern</button>`}</div>
+          : `<button class="btn" data-act="save-settings">Nur auf diesem Gerät speichern</button>${priceFile && !priceFile.error
+              ? `<button class="btn primary" data-act="price-write">In Preisdatei speichern</button>`
+              : canLink ? `<button class="btn primary" data-act="price-create">Als Preisdatei speichern…</button>`
+              : `<button class="btn primary" data-act="export-catalog">Als preise.json sichern</button>`}`}</div>
     </div>
   </div>`;
 }
@@ -1213,20 +1322,52 @@ document.addEventListener("click", async e => {
       draft = clone(DEFAULT_CATALOG); settingsDirty = true; render(); toast("Beispielwerte geladen. Zum Übernehmen speichern."); break;
     case "export-catalog": {
       const data = clone(draft); data.example = false;
-      try { await saveFile("preise.json", JSON.stringify(data, null, 2) + "\n"); toast("preise.json gesichert. Jetzt im GitHub-Repository hochladen."); }
+      try { await saveFile("preise.json", JSON.stringify(data, null, 2) + "\n"); toast("preise.json gesichert. Jetzt in den gemeinsamen Ordner legen."); }
       catch (e) { if (e && e.code !== "declined") toast("Die Datei konnte nicht gespeichert werden."); }
       break;
     }
     case "use-central":
-      if (!arm(b, "central", "Eigene Preise verwerfen?")) break;
-      try { localStorage.removeItem("angebotsrechner:catalog"); } catch {}
-      localPrices = false; catalog = centralCatalog ? clone(centralCatalog) : clone(DEFAULT_CATALOG);
-      draft = clone(catalog); settingsDirty = false; render(); toast("Zentrale Preise werden verwendet."); break;
+      if (!arm(b, "central", "Wirklich?")) break;
+      try { localStorage.removeItem("angebotsrechner:catalog"); localStorage.removeItem("angebotsrechner:catalogMeta"); } catch {}
+      localPrices = false; priceMeta = null; catalog = centralCatalog ? clone(centralCatalog) : clone(DEFAULT_CATALOG);
+      draft = clone(catalog); settingsDirty = false; render(); toast(centralCatalog && !centralCatalog.example ? "Preise vom Server werden verwendet." : "Beispielpreise werden verwendet."); break;
+    case "price-link":
+      try {
+        const [h] = await window.showOpenFilePicker({ types: [{ description: "Preisdatei", accept: { "application/json": [".json"] } }] });
+        await readLinkedFile(h); await idbSet("priceHandle", h);
+        priceFile = { handle: h, name: h.name, needsPermission: false };
+        render(); toast(`Preisdatei „${h.name}“ verknüpft.`);
+      } catch (e) { if (e && e.name !== "AbortError") toast(e.message || "Die Datei konnte nicht gelesen werden."); }
+      break;
+    case "price-reload": await reloadPriceFile(); break;
+    case "price-unlink":
+      if (!arm(b, "unlink", "Wirklich lösen?")) break;
+      await idbSet("priceHandle", undefined); priceFile = null;
+      try { localStorage.removeItem("angebotsrechner:catalog"); localStorage.removeItem("angebotsrechner:catalogMeta"); } catch {}
+      localPrices = false; priceMeta = null; catalog = centralCatalog ? clone(centralCatalog) : clone(DEFAULT_CATALOG);
+      draft = clone(catalog); settingsDirty = false; render(); toast("Verknüpfung gelöst."); break;
+    case "price-open": $("price-input").click(); break;
+    case "price-write":
+      try {
+        if (!(await ensurePermission(priceFile.handle, "readwrite"))) { toast("Ohne Erlaubnis kann die App nicht in die Preisdatei schreiben."); break; }
+        await writePriceFile(priceFile.handle);
+        render(); toast("In der Preisdatei gespeichert. Gilt für alle, die sie nutzen.");
+      } catch (e) { toast("Speichern in der Preisdatei fehlgeschlagen."); }
+      break;
+    case "price-create":
+      // Erste Preisdatei am PC anlegen: Ort wählen (z. B. OneDrive), Datei schreiben und gleich verknüpfen
+      try {
+        const h = await window.showSaveFilePicker({ suggestedName: "preise.json", types: [{ description: "Preisdatei", accept: { "application/json": [".json"] } }] });
+        await writePriceFile(h); await idbSet("priceHandle", h);
+        priceFile = { handle: h, name: h.name, needsPermission: false };
+        render(); toast(`Preisdatei „${h.name}“ gespeichert und verknüpft.`);
+      } catch (e) { if (e && e.name !== "AbortError") toast("Die Preisdatei konnte nicht gespeichert werden."); }
+      break;
     case "cancel-settings": draft = clone(catalog); settingsDirty = false; view = "wizard"; render(); break;
     case "save-settings": {
       const next = clone(draft); next.example = false;
       try {
-        await saveCatalog(next); catalog = mergeCatalog(next); draft = clone(catalog); settingsDirty = false;
+        await saveCatalog(next); if (!caps.shared) { priceMeta = { source: "geraet" }; lsSet("catalogMeta", priceMeta); } catalog = mergeCatalog(next); draft = clone(catalog); settingsDirty = false;
         if (!catalog.groups.some(g => g.id === state.customer.group)) state.customer.group = "none";
         render(); toast(caps.shared ? "Einstellungen gespeichert." : "Auf diesem Gerät gespeichert.");
       } catch (err) { toast(err.message); }
@@ -1241,6 +1382,12 @@ document.addEventListener("input", e => {
 });
 document.addEventListener("change", async e => {
   const t = e.target;
+  if (t.id === "price-input" && t.files && t.files[0]) {
+    const f = t.files[0]; t.value = "";
+    try { applyFilePrices(parsePriceFile(await f.text()), { source: "datei", name: f.name, linked: false, modified: f.lastModified, read: Date.now() }); render(); toast(`Preise aus „${f.name}“ übernommen.`); }
+    catch (err) { toast(err.message); }
+    return;
+  }
   if (t.dataset.bind && t.type === "number") softRerender();
   if (t.dataset.cbind && t.tagName === "SELECT") softRerender();
   if (t.dataset.qstatus) {
@@ -1267,6 +1414,11 @@ function registerOffline() {
   quotes = listFromObj(lsGet("quotes", {}));
   render();
   registerOffline();
+  await initPriceFile();
+  if (priceFile) {
+    rerenderKeepFocus();
+    if (priceFile.needsPermission) toast(`Preise aus „${priceFile.name}“ einlesen?`, { label: "Einlesen", fn: () => { $("toast").hidden = true; reloadPriceFile(); } });
+  }
   centralCatalog = await loadCentral();
   if (centralCatalog && !localPrices) {
     catalog = clone(centralCatalog);

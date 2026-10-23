@@ -1,7 +1,7 @@
 # Angebotsmappe
 
 Angebote für Neu- und Bestandskunden zusammenklicken: Paket, Betrieb (lokal oder Cloud), Zusatzmodule und Schulungen. Auf der letzten Seite stehen die monatlichen und die einmaligen Kosten (netto).
-Die Preise kommen zentral aus der Datei `preise.json` in diesem Repository.
+Die Preise kommen aus einer **Preisdatei** (`preise.json`), die ihr selbst ablegt, z. B. im gemeinsamen OneDrive-Ordner. So stehen keine echten Preise im Repository.
 
 **Adresse (nach dem Einrichten von GitHub Pages):** https://hanssiedewurst.github.io/Angebotsmappe-/
 
@@ -10,7 +10,7 @@ Die Preise kommen zentral aus der Datei `preise.json` in diesem Repository.
 | Datei | Zweck |
 |---|---|
 | `index.html` | die App |
-| `preise.json` | **zentrale Preisliste**: Pakete, KI-Bundle, Konditionen, Module, Schulungen, Cloud, Salesforce-Zuordnung |
+| `preise.json` | **Vorlage mit Beispielpreisen**. Die echte Preisdatei liegt nicht hier, sondern z. B. im OneDrive (siehe Abschnitt 4). |
 | `sw.js` | Offline-Speicher: hält die App nach dem ersten Start auf dem Gerät bereit |
 | `manifest.webmanifest` | Name und Icon für den Home-Bildschirm |
 | `icons/` | App-Icons |
@@ -23,7 +23,7 @@ Die Preise kommen zentral aus der Datei `preise.json` in diesem Repository.
 1. Im Repository **Settings** → links **Pages** → Source **Deploy from a branch**, Branch **main**, Ordner **/ (root)** → **Save**.
 2. Nach ein bis zwei Minuten steht oben auf derselben Seite die Adresse.
 
-**Wichtig:** Im kostenlosen GitHub-Tarif geht Pages nur mit **öffentlichen** Repositories (**Settings → General → Danger Zone → Change visibility**). Anders als bei der Unterschriftenmappe steht hier eine Preisliste drin: Wer die Adresse oder das Repository kennt, kann `preise.json` lesen. Auch mit einem bezahlten Tarif ist die Pages-Seite selbst öffentlich erreichbar. Wenn die Preise nicht öffentlich sein dürfen, braucht es später einen eigenen Server mit Anmeldung (siehe Abschnitt 6).
+Im kostenlosen GitHub-Tarif geht Pages nur mit **öffentlichen** Repositories (**Settings → General → Danger Zone → Change visibility**). Öffentlich ist nur der App-Code mit Beispielpreisen. Die echten Preise liegen in eurer Preisdatei und kommen nie ins Repository. **Bitte keine echte `preise.json` hier hochladen.**
 
 ---
 
@@ -32,7 +32,7 @@ Die Preise kommen zentral aus der Datei `preise.json` in diesem Repository.
 - **iPad:** Adresse in **Safari** öffnen → **Teilen-Symbol** → **Zum Home-Bildschirm** → **Hinzufügen**. Die App einmal vom Home-Bildschirm aus öffnen, solange Internet da ist.
 - **PC:** Adresse in **Edge** öffnen → **…** → **Apps** → **Diese Website als App installieren**.
 
-Danach läuft die App auch ohne Netz. Neue Preise kommen beim nächsten Öffnen mit Internet.
+Danach läuft die App auch ohne Netz. Zum Schluss einmal die Preisdatei einrichten (Abschnitt 4).
 
 ---
 
@@ -59,20 +59,29 @@ Die App führt in sechs Schritten durch das Angebot. Rechts läuft eine Kostenü
 
 ---
 
-## 4. Preise zentral pflegen
+## 4. Preise: die Preisdatei
 
-Alle Preise, Konditionen, Module und Schulungen stehen in `preise.json`. Ändert man diese Datei im Repository, gelten die neuen Preise für alle beim nächsten Öffnen mit Internet. `sw.js` muss dafür **nicht** geändert werden.
+Alle Preise, Konditionen, Module und Schulungen stehen in einer Datei `preise.json`. Sie liegt an einem Ort, auf den alle Zugriff haben, am besten im gemeinsamen **OneDrive-Ordner**. Die App liest sie von dort.
 
-**Am einfachsten über die App:**
-1. **Einstellungen** öffnen und Preise, Module, Schulungen usw. anpassen.
-2. **Als preise.json sichern**.
-3. Auf github.com im Repository **Add file** → **Upload files** → die Datei `preise.json` hochladen → **Commit changes**. Die alte Datei wird ersetzt.
+**Erstes Anlegen (einmal, am Windows-PC mit Edge oder Chrome):**
+1. In der App **Einstellungen** öffnen und die echten Preise eintragen.
+2. **Als Preisdatei speichern…** → im Explorer den gemeinsamen OneDrive-Ordner wählen → **Speichern**.
+3. Die Datei ist damit gleich verknüpft. Weitere Änderungen speichert **In Preisdatei speichern** direkt dorthin.
 
-**Direkt auf github.com:** `preise.json` öffnen → Stift-Symbol → Werte ändern → **Commit changes**.
+**Am Windows-PC (Edge oder Chrome):**
+1. **Einstellungen** → **Preisdatei verknüpfen…** → die `preise.json` im OneDrive wählen.
+2. Die App liest die Datei ab jetzt **bei jedem Start neu**. Nach einem Neustart des Browsers fragt sie eventuell einmal: „Preise aus … einlesen?“ → **Einlesen** → **Zulassen**.
+3. Preise ändern: in den Einstellungen anpassen → **In Preisdatei speichern**. Die Änderung landet direkt in der Datei im OneDrive und gilt für alle, sobald OneDrive synchronisiert hat.
 
-**Nur auf diesem Gerät speichern** probiert Preise aus, ohne andere zu betreffen. Das Gerät zeigt dann „Dieses Gerät nutzt eigene Preise“. **Zentrale Preise verwenden** in den Einstellungen schaltet zurück.
+**Auf dem iPad:**
+1. Einmal die OneDrive-App installieren und in der **Dateien**-App einschalten (wie bei der Unterschriftenmappe).
+2. **Einstellungen** → **Preisdatei öffnen…** → **OneDrive** → `preise.json`.
+3. Safari kann Dateien nicht dauerhaft verknüpfen. Die Preise werden deshalb auf dem iPad gespeichert und gelten auch offline. **Bei neuen Preisen die Datei erneut öffnen.** In den Einstellungen steht, wann zuletzt eingelesen wurde.
 
-Solange `"example": true` in der Datei steht, zeigt die App „Beispielpreise“. Beim Sichern über die App wird das automatisch auf `false` gesetzt.
+**Woher die Preise kommen**, steht oben in den Einstellungen unter **Preisquelle**:
+- *Preisdatei „…“*: verknüpfte bzw. eingelesene Preisdatei
+- *Eigene Preise dieses Geräts*: mit **Nur auf diesem Gerät speichern** abgelegt, gelten nur hier
+- *Beispielpreise*: noch keine Preisdatei geöffnet. Die App zeigt dann im Angebot „Beispielpreise“.
 
 ---
 
@@ -89,7 +98,7 @@ Eine direkte Verbindung zu Salesforce braucht einen Server (siehe Abschnitt 6).
 ## 6. Später: zentraler Server
 
 Die App ist so gebaut, dass sich Preise und Salesforce-Übergabe später an einen Server hängen lassen:
-- **Preise:** Statt `preise.json` lädt die App die Preise von einem Server mit Anmeldung. Dann sind sie nicht mehr öffentlich und lassen sich direkt in der App für alle speichern.
+- **Preise:** Statt der Preisdatei im OneDrive lädt die App die Preise von einem Server mit Anmeldung. Dann aktualisieren sich auch die iPads automatisch.
 - **Salesforce:** Der Server nimmt die Angebotsdaten entgegen und legt Opportunity und Line Items per Salesforce-API an.
 
 ---
@@ -105,5 +114,6 @@ Die App ist so gebaut, dass sich Preise und Salesforce-Übergabe später an eine
 ## 8. Datenschutz
 
 - **Angebote und Kundendaten** bleiben im Browser des Geräts. Es gibt keinen Server der App, der sie empfängt.
-- **GitHub** liefert nur die App-Dateien und die Preisliste aus.
+- **Preise** liegen in eurer Preisdatei (OneDrive) und auf den Geräten, nicht bei GitHub.
+- **GitHub** liefert nur die App-Dateien aus.
 - **Keine externen Anbieter:** Schriften kommen vom Gerät selbst, es werden keine Dateien von Google oder anderen Diensten nachgeladen.

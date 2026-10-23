@@ -1,7 +1,7 @@
 /* Offline-Speicher der Angebotsmappe.
    Bei jeder Änderung an den App-Dateien VERSION hochzählen (v1 -> v2 ...),
-   damit die Geräte die neue Fassung abholen. Für neue Preise in preise.json ist das nicht nötig. */
-const VERSION = 'v1';
+   damit die Geräte die neue Fassung abholen. Die echten Preise kommen aus der Preisdatei (siehe README). */
+const VERSION = 'v3';
 const CACHE = 'angebotsmappe-' + VERSION;
 
 const CORE = [
