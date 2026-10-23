@@ -256,6 +256,9 @@ table.edit td.c { text-align: center; }
 .cost-card td .d.man { color: var(--deal); }
 .linkish { border: 0; background: none; padding: 0; color: var(--deal); text-decoration: underline; cursor: pointer; font-size: inherit; }
 
+a.btn { text-decoration: none; color: var(--fg); }
+.pdf-ready { display: flex; justify-content: space-between; align-items: center; gap: 12px 20px; flex-wrap: wrap; border: 1px solid var(--accent); background: var(--accent-soft); border-radius: 12px; padding: 14px 16px; }
+.pdf-ready-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
 .price-src { display: flex; justify-content: space-between; align-items: center; gap: 12px 20px; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; background: var(--surface-2); }
 .price-src-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .toast-btn { margin-left: 10px; border: 1px solid currentColor; background: transparent; color: inherit; border-radius: 6px; padding: 3px 10px; cursor: pointer; font-weight: 600; }
@@ -1076,6 +1079,8 @@ function vSummary() {
     <button class="sneaky ${state.manual && state.manual.on ? "on" : ""}" data-act="toggle-manual" title="Sonderkonditionen" aria-label="Sonderkonditionen" aria-pressed="${!!(state.manual && state.manual.on)}">%</button>
   </div>
   ${tplInfo ? "" : `<p class="small muted">Für das Angebots-PDF einmal die TAIFUN-Vorlage unter Einstellungen → Angebots-PDF öffnen.</p>`}
+  ${pdfReady() ? `<div class="pdf-ready" id="pdf-ready"><div class="pdf-ready-t"><b>Angebots-PDF ist fertig</b><span class="small muted">${esc(lastPdf.name)}</span></div>
+    <div class="actions"><button class="btn primary" data-act="pdf-save">Speichern…</button><a class="btn" href="${lastPdf.url}" target="_blank" rel="noopener">Ansehen</a></div></div>` : ""}
   ${state.manual && state.manual.on ? `<div class="man-box"><div class="man-row"><label for="soko">Sonderrabatt</label><input id="soko" type="number" min="0" max="100" step="1" data-bind="manual.value" value="${num(state.manual.value) || ""}" placeholder="0"><span>%</span>${num(state.manual.value) ? `<button class="linkish" data-act="clear-manual">entfernen</button>` : ""}</div><p class="small muted">Gilt für Paket, Cloud und alle rabattfähigen Module (nicht App und TPM), also dieselben Positionen wie der Konditionsrabatt, und kommt zu diesem dazu, z. B. 20 % + 30 % = 50 %.</p></div>` : ""}
 
   <details class="box" id="sf-box"><summary>Salesforce-Daten ansehen</summary><div>
@@ -1307,6 +1312,9 @@ function shareOrDownload(file) {
   a.href = URL.createObjectURL(file); a.download = file.name; document.body.append(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
 }
+// Erst das PDF erstellen, dann über einen eigenen Klick speichern. Der Speichern-Dialog braucht einen frischen Klick,
+// sonst bricht der Browser ihn nach dem Erstellen still ab.
+let lastPdf = null; // { name, blob, url, sig }
 async function makePdf(btn) {
   const cu = state.customer, missing = [];
   if (!cu.company) missing.push("Firma");
@@ -1314,24 +1322,47 @@ async function makePdf(btn) {
   if (!cu.street || !cu.city) missing.push("Anschrift");
   if (missing.length) { toast(`Für das Angebots-PDF fehlt noch: ${missing.join(", ")} (Schritt 1).`); return; }
   if (!window.AngebotPDF) { toast("Die PDF-Funktion ist hier nicht verfügbar."); return; }
-  const bytes = await templateBytes();
-  if (!bytes) { draft = clone(catalog); settingsDirty = false; view = "settings"; settingsTab = "pdf"; render(); toast("Bitte zuerst die TAIFUN-Vorlage öffnen."); return; }
-  // Am PC zuerst den Speicherort wählen (der Browser erlaubt den Dialog nur direkt nach dem Klick)
-  let handle = null;
-  if ("showSaveFilePicker" in window && !caps.downloads) {
-    try { handle = await window.showSaveFilePicker({ suggestedName: pdfFileName(), id: "angebote", types: [{ description: "PDF", accept: { "application/pdf": [".pdf"] } }] }); }
-    catch (err) { if (err && err.name === "AbortError") return; handle = null; }
-  }
   const old = btn.textContent; btn.disabled = true; btn.textContent = "PDF wird erstellt …";
   try {
+    const bytes = await templateBytes();
+    if (!bytes) { draft = clone(catalog); settingsDirty = false; view = "settings"; settingsTab = "pdf"; render(); toast("Bitte zuerst die TAIFUN-Vorlage öffnen."); return; }
     if (!state.createdAt) state.createdAt = new Date().toISOString();
-    const pdf = await AngebotPDF.build(bytes, pdfData());
-    if (handle) { const w = await handle.createWritable(); await w.write(pdf); await w.close(); toast(`Gespeichert: ${handle.name}`); return; }
-    if (caps.downloads) { await caps.downloads.save({ filename: pdfFileName(), data: pdf }); return; }
-    const file = new File([pdf], pdfFileName(), { type: "application/pdf" });
-    toast("Das Angebots-PDF ist fertig.", { label: navigator.canShare && navigator.canShare({ files: [file] }) ? "Sichern oder teilen" : "Herunterladen", fn: () => shareOrDownload(file) });
+    const data = pdfData(), pdf = await AngebotPDF.build(bytes, data);
+    if (lastPdf) URL.revokeObjectURL(lastPdf.url);
+    const blob = new Blob([pdf], { type: "application/pdf" });
+    lastPdf = { name: pdfFileName(), blob, url: URL.createObjectURL(blob), sig: JSON.stringify(data) };
+    render();
+    const box = $("pdf-ready"); if (box) box.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    toast("Das Angebots-PDF ist fertig.");
   } catch (err) { console.error(err); toast(err.message || "Das PDF konnte nicht erstellt werden."); }
-  finally { btn.disabled = false; btn.textContent = old; }
+  finally { if (btn.isConnected) { btn.disabled = false; btn.textContent = old; } }
+}
+function pdfReady() { return lastPdf && lastPdf.sig === JSON.stringify(pdfData()) ? lastPdf : null; }
+async function savePdf() {
+  const p = pdfReady();
+  if (!p) { toast("Das Angebot wurde geändert. Bitte das PDF neu erstellen."); render(); return; }
+  if (caps.downloads) {
+    try { await caps.downloads.save({ filename: p.name, data: p.blob }); } catch (err) { if (err && err.code !== "declined") toast("Das PDF konnte nicht gespeichert werden."); }
+    return;
+  }
+  // PC: Ort wählen, z. B. den OneDrive-Ordner „Angebote“
+  if ("showSaveFilePicker" in window) {
+    try {
+      const h = await window.showSaveFilePicker({ suggestedName: p.name, id: "angebote", types: [{ description: "PDF", accept: { "application/pdf": [".pdf"] } }] });
+      const w = await h.createWritable(); await w.write(p.blob); await w.close();
+      toast(`Gespeichert: ${h.name}`); return;
+    } catch (err) {
+      if (err && err.name === "AbortError") { toast("Speichern abgebrochen."); return; }
+      console.warn("Speichern-Dialog nicht verfügbar", err); // dann als normaler Download
+    }
+  }
+  const file = new File([p.blob], p.name, { type: "application/pdf" });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: p.name }); return; } catch (err) { if (err && err.name === "AbortError") return; }
+  }
+  const a = document.createElement("a");
+  a.href = p.url; a.download = p.name; document.body.append(a); a.click(); a.remove();
+  toast("Das PDF liegt im Download-Ordner.");
 }
 
 /* ---------- Toast & Datei/Clipboard ---------- */
@@ -1470,6 +1501,7 @@ document.addEventListener("click", async e => {
       tplInfo = null; try { localStorage.removeItem("angebotsrechner:tplInfo"); } catch {}
       render(); toast("Vorlage entfernt."); break;
     case "pdf-make": await makePdf(b); break;
+    case "pdf-save": await savePdf(); break;
     case "add-module":
       draft.modules.push({ id: "m" + Date.now().toString(36), name: "Neues Modul", desc: "", pricing: "flat", monthly: 0, perUser: 0, unit: "Nutzer", once: 0, sku: "", discountable: true, pdfName: "", baseName: "", userName: "", onceName: "" });
       settingsDirty = true; render(); break;
