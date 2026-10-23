@@ -751,6 +751,13 @@ async function reloadPriceFile() {
     rerenderKeepFocus(); toast("Preise neu eingelesen.");
   } catch (e) { priceFile.error = e.message && e.message.startsWith("D") ? e.message : "Die Preisdatei konnte nicht gelesen werden. Liegt sie noch am selben Ort?"; rerenderKeepFocus(); }
 }
+// Einstellungen in die Preisdatei schreiben und danach wieder einlesen (prüft die Datei gleich mit)
+async function writePriceFile(handle) {
+  const data = clone(draft); data.example = false;
+  const w = await handle.createWritable();
+  await w.write(JSON.stringify(data, null, 2) + "\n"); await w.close();
+  await readLinkedFile(handle);
+}
 const fmtDateTime = t => new Date(t).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 function priceSourceBox() {
   const openBtn = canLink
@@ -777,7 +784,8 @@ function priceSourceBox() {
     btns = openBtn;
   } else {
     title = "Beispielpreise";
-    detail = "Noch keine Preisdatei geöffnet.";
+    detail = canLink ? "Noch keine Preisdatei. Preise unten eintragen und mit „Als Preisdatei speichern…“ im OneDrive-Ordner ablegen, oder eine vorhandene Datei verknüpfen."
+      : "Noch keine Preisdatei geöffnet. Die Preisdatei wird am PC angelegt und hier über die Dateien-App geöffnet.";
     btns = openBtn;
   }
   return `<div class="price-src"><div class="price-src-t"><p class="eyebrow">Preisquelle</p><p><b>${title}</b></p><p class="small muted">${detail}</p></div><div class="actions">${btns}</div></div>`;
@@ -1159,7 +1167,7 @@ function renderSettings() {
   return `<div class="panel">
     <div class="page-head"><div class="step-head"><p class="eyebrow">${caps.shared ? "Gilt für alle, die diesen Rechner nutzen" : "Preise und Einstellungen"}</p><h2>Einstellungen</h2></div></div>
     ${caps.shared ? "" : priceSourceBox()}
-    ${caps.shared ? "" : `<p class="small muted" style="max-width:80ch">Die Preise liegen in einer Preisdatei (<code>preise.json</code>), am besten im gemeinsamen OneDrive-Ordner. ${canLink ? "Am PC wird sie verknüpft und bei jedem Start neu gelesen. Änderungen hier landen mit <b>In Preisdatei speichern</b> direkt in der Datei und gelten für alle." : "Auf dem iPad wird sie über die Dateien-App geöffnet und auf dem Gerät gespeichert. Bei neuen Preisen die Datei erneut öffnen."}</p>`}
+    ${caps.shared ? "" : `<p class="small muted" style="max-width:80ch">Die Preise liegen in einer Preisdatei (<code>preise.json</code>), am besten im gemeinsamen OneDrive-Ordner. ${canLink ? "Am PC wird sie verknüpft und bei jedem Start neu gelesen. Änderungen hier landen mit <b>In Preisdatei speichern</b> direkt in der Datei im OneDrive und gelten für alle." : "Auf dem iPad wird sie über die Dateien-App geöffnet und auf dem Gerät gespeichert. Bei neuen Preisen die Datei erneut öffnen."}</p>`}
     ${draft.example ? `<p class="example-note">Aktuell sind Beispielpreise hinterlegt. Trage eure echten Preise ein und speichere.</p>` : ""}
     ${ro ? `<p class="example-note">Du kannst die Einstellungen ansehen. Ändern dürfen nur Bearbeiter dieses Rechners.</p>` : ""}
     <div class="tabs" role="tablist">${Object.entries(tabs).map(([k, v]) => `<button role="tab" aria-selected="${settingsTab === k}" class="${settingsTab === k ? "on" : ""}" data-act="tab" data-tab="${k}">${v}</button>`).join("")}</div>
@@ -1172,6 +1180,7 @@ function renderSettings() {
         ${caps.shared ? `<button class="btn primary" data-act="save-settings" ${ro ? "disabled" : ""}>Einstellungen speichern</button>`
           : `<button class="btn" data-act="save-settings">Nur auf diesem Gerät speichern</button>${priceFile && !priceFile.error
               ? `<button class="btn primary" data-act="price-write">In Preisdatei speichern</button>`
+              : canLink ? `<button class="btn primary" data-act="price-create">Als Preisdatei speichern…</button>`
               : `<button class="btn primary" data-act="export-catalog">Als preise.json sichern</button>`}`}</div>
     </div>
   </div>`;
@@ -1338,16 +1347,22 @@ document.addEventListener("click", async e => {
       localPrices = false; priceMeta = null; catalog = centralCatalog ? clone(centralCatalog) : clone(DEFAULT_CATALOG);
       draft = clone(catalog); settingsDirty = false; render(); toast("Verknüpfung gelöst."); break;
     case "price-open": $("price-input").click(); break;
-    case "price-write": {
-      const data = clone(draft); data.example = false;
+    case "price-write":
       try {
         if (!(await ensurePermission(priceFile.handle, "readwrite"))) { toast("Ohne Erlaubnis kann die App nicht in die Preisdatei schreiben."); break; }
-        const w = await priceFile.handle.createWritable();
-        await w.write(JSON.stringify(data, null, 2) + "\n"); await w.close();
-        await readLinkedFile(priceFile.handle); render(); toast("In der Preisdatei gespeichert. Gilt für alle, die sie nutzen.");
+        await writePriceFile(priceFile.handle);
+        render(); toast("In der Preisdatei gespeichert. Gilt für alle, die sie nutzen.");
       } catch (e) { toast("Speichern in der Preisdatei fehlgeschlagen."); }
       break;
-    }
+    case "price-create":
+      // Erste Preisdatei am PC anlegen: Ort wählen (z. B. OneDrive), Datei schreiben und gleich verknüpfen
+      try {
+        const h = await window.showSaveFilePicker({ suggestedName: "preise.json", types: [{ description: "Preisdatei", accept: { "application/json": [".json"] } }] });
+        await writePriceFile(h); await idbSet("priceHandle", h);
+        priceFile = { handle: h, name: h.name, needsPermission: false };
+        render(); toast(`Preisdatei „${h.name}“ gespeichert und verknüpft.`);
+      } catch (e) { if (e && e.name !== "AbortError") toast("Die Preisdatei konnte nicht gespeichert werden."); }
+      break;
     case "cancel-settings": draft = clone(catalog); settingsDirty = false; view = "wizard"; render(); break;
     case "save-settings": {
       const next = clone(draft); next.example = false;

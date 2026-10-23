@@ -63,9 +63,10 @@ Die App führt in sechs Schritten durch das Angebot. Rechts läuft eine Kostenü
 
 Alle Preise, Konditionen, Module und Schulungen stehen in einer Datei `preise.json`. Sie liegt an einem Ort, auf den alle Zugriff haben, am besten im gemeinsamen **OneDrive-Ordner**. Die App liest sie von dort.
 
-**Erstes Anlegen (einmal):**
-1. In der App **Einstellungen** öffnen, Preise eintragen.
-2. **Als preise.json sichern** und die Datei in den gemeinsamen OneDrive-Ordner legen.
+**Erstes Anlegen (einmal, am Windows-PC mit Edge oder Chrome):**
+1. In der App **Einstellungen** öffnen und die echten Preise eintragen.
+2. **Als Preisdatei speichern…** → im Explorer den gemeinsamen OneDrive-Ordner wählen → **Speichern**.
+3. Die Datei ist damit gleich verknüpft. Weitere Änderungen speichert **In Preisdatei speichern** direkt dorthin.
 
 **Am Windows-PC (Edge oder Chrome):**
 1. **Einstellungen** → **Preisdatei verknüpfen…** → die `preise.json` im OneDrive wählen.
